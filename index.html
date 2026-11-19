@@ -1,0 +1,555 @@
+<title>101 Okey Skor</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: one-column phone app — standings strip, hand ledger, sticky "El ekle" bar; hand entry in a bottom sheet. */
+:root {
+  --bg: #eef1ec;
+  --surface: #ffffff;
+  --surface-2: #f5f7f3;
+  --fg: #1c2420;
+  --muted: #66726b;
+  --line: #d8ded6;
+  --felt: #1f5a43;
+  --felt-fg: #ffffff;
+  --tile: #fbf8ef;
+  --tile-edge: #e3dcc6;
+  --t-red: #c8312b;
+  --t-blue: #1f5fae;
+  --t-black: #23262b;
+  --t-yellow: #c98a06;
+  --good: #1f7a4d;
+  --bad: #b3261e;
+  --display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1713; --surface: #18221d; --surface-2: #1e2a24; --fg: #e8eee9; --muted: #93a39a;
+    --line: #2c3a33; --felt: #2e7a5c; --felt-fg: #ffffff; --tile: #2a2a24; --tile-edge: #3a392f;
+    --t-red: #ff6b5e; --t-blue: #6aa5ff; --t-black: #d6dad7; --t-yellow: #f2bd3d;
+    --good: #5fd39a; --bad: #ff7b72; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1713; --surface: #18221d; --surface-2: #1e2a24; --fg: #e8eee9; --muted: #93a39a;
+  --line: #2c3a33; --felt: #2e7a5c; --felt-fg: #ffffff; --tile: #2a2a24; --tile-edge: #3a392f;
+  --t-red: #ff6b5e; --t-blue: #6aa5ff; --t-black: #d6dad7; --t-yellow: #f2bd3d;
+  --good: #5fd39a; --bad: #ff7b72; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.45 var(--body);
+  -webkit-tap-highlight-color: transparent;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--felt); }
+.wrap {
+  max-width: 640px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 120px;
+}
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--t-blue); outline-offset: 2px; }
+.num { font-family: var(--display); font-variant-numeric: tabular-nums; }
+
+/* header */
+header.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--felt); color: var(--felt-fg);
+  margin-left: calc(-1 * max(16px, env(safe-area-inset-left, 0px)));
+  margin-right: calc(-1 * max(16px, env(safe-area-inset-right, 0px)));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 12px;
+  display: flex; align-items: center; gap: 12px;
+}
+.brand { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.brand .tile { width: 30px; height: 38px; font-size: 20px; }
+.brand h1 { margin: 0; font: 700 22px/1 var(--display); letter-spacing: .02em; }
+.brand small { display: block; font: 500 12px/1.2 var(--body); opacity: .8; }
+.icon-btn {
+  background: rgba(255,255,255,.14); border: 0; color: var(--felt-fg); border-radius: 10px;
+  padding: 8px 12px; font-weight: 600; font-size: 14px;
+}
+
+/* okey tile */
+.tile {
+  display: inline-grid; place-items: center; border-radius: 6px;
+  background: var(--tile); border: 1px solid var(--tile-edge); box-shadow: 0 2px 0 var(--tile-edge);
+  font-family: var(--display); font-weight: 700; color: var(--t-red);
+}
+.c0 { --pc: var(--t-red); } .c1 { --pc: var(--t-blue); } .c2 { --pc: var(--t-black); } .c3 { --pc: var(--t-yellow); }
+
+h2 { font: 600 13px/1 var(--body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 24px 0 10px; }
+
+/* setup */
+.seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 4px; gap: 4px; }
+.seg button { border: 0; background: transparent; padding: 10px; border-radius: 9px; font-weight: 600; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.seg.small button { padding: 7px; }
+.field { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px 12px; }
+.field + .field { margin-top: 8px; }
+.field .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--pc); flex: none; }
+.field input { border: 0; background: transparent; padding: 10px 0; flex: 1; min-width: 0; outline: none; font-size: 16px; }
+.team-box { border: 1px solid var(--line); border-radius: 14px; padding: 12px; background: var(--surface-2); }
+.team-box + .team-box { margin-top: 10px; }
+.team-box .lbl { font: 700 16px var(--display); letter-spacing: .03em; margin-bottom: 8px; color: var(--pc); }
+.rules { display: grid; gap: 8px; }
+.rule { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.rule span { min-width: 0; }
+.rule small { display: block; color: var(--muted); font-size: 12px; }
+.rule input[type="number"] { width: 84px; text-align: right; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; background: var(--surface-2); font-size: 16px; }
+.rule input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--felt); }
+
+.primary {
+  width: 100%; border: 0; border-radius: 14px; padding: 15px; background: var(--felt); color: var(--felt-fg);
+  font: 700 19px var(--display); letter-spacing: .04em;
+}
+.ghost { border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 10px 14px; font-weight: 600; }
+.danger { color: var(--bad); }
+
+/* standings */
+.standings { display: grid; gap: 8px; margin-top: 16px; }
+.stand {
+  display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 12px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px;
+}
+.stand.lead { border-color: var(--felt); box-shadow: inset 0 0 0 1px var(--felt); }
+.stand .rank { width: 30px; height: 38px; font-size: 20px; color: var(--pc); }
+.stand .who { min-width: 0; }
+.stand .who b { display: block; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stand .who small { color: var(--muted); font-size: 12px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stand .total { font: 700 30px/1 var(--display); font-variant-numeric: tabular-nums; text-align: right; }
+.stand .diff { display: block; font: 500 12px var(--body); color: var(--muted); text-align: right; margin-top: 2px; }
+.pill { display: inline-block; font: 600 10px/1 var(--body); text-transform: uppercase; letter-spacing: .08em; padding: 3px 6px; border-radius: 99px; background: var(--felt); color: var(--felt-fg); vertical-align: 2px; margin-left: 6px; }
+
+/* ledger */
+.ledger-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { padding: 10px 8px; text-align: center; border-bottom: 1px solid var(--line); }
+th { font: 600 12px var(--body); color: var(--muted); position: sticky; top: 0; background: var(--surface); }
+th .bar { display: block; height: 3px; border-radius: 2px; background: var(--pc); margin: 6px auto 0; width: 70%; }
+th.n, td.n { width: 34px; color: var(--muted); font-size: 12px; }
+td { font: 600 19px var(--display); }
+td small { display: block; font: 500 11px var(--body); color: var(--muted); }
+td.fin { color: var(--good); }
+td .tag { display: block; font: 600 9px var(--body); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+tbody tr { cursor: pointer; }
+tbody tr:active { background: var(--surface-2); }
+tfoot td { font-size: 22px; background: var(--surface-2); border-bottom: 0; }
+.empty { padding: 28px 16px; text-align: center; color: var(--muted); }
+.empty b { display: block; color: var(--fg); font-size: 16px; margin-bottom: 4px; }
+
+.bottombar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-top: 12px; padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, var(--bg) 70%, transparent);
+}
+.bottombar .primary { max-width: 608px; margin: 0 auto; display: block; box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+
+/* sheet */
+.scrim { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 20; }
+.sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 21; max-height: 92vh; overflow-y: auto;
+  background: var(--bg); border-radius: 20px 20px 0 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-top: 8px; padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+}
+.sheet-inner { max-width: 608px; margin: 0 auto; }
+.grab { width: 40px; height: 4px; border-radius: 2px; background: var(--line); margin: 0 auto 10px; }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sheet-head h3 { margin: 0; font: 700 24px var(--display); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 8px 12px; font-weight: 600; font-size: 14px; }
+.chip[aria-pressed="true"] { background: var(--felt); border-color: var(--felt); color: var(--felt-fg); }
+.chip .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--pc); margin-right: 6px; }
+.chip[aria-pressed="true"] .dot { box-shadow: 0 0 0 2px var(--felt-fg); }
+.prow { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: grid; gap: 10px; }
+.prow + .prow { margin-top: 8px; }
+.prow.is-fin { border-color: var(--good); }
+.prow-top { display: flex; align-items: center; gap: 10px; }
+.prow-top .name { flex: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prow-top .name::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--pc); margin-right: 8px; }
+.prow-top input {
+  width: 96px; text-align: right; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px;
+  background: var(--surface-2); font: 700 22px var(--display); font-variant-numeric: tabular-nums;
+}
+.prow-top input:disabled { opacity: .45; }
+.result { min-width: 64px; text-align: right; font: 700 22px var(--display); font-variant-numeric: tabular-nums; }
+.result.neg { color: var(--good); }
+.opts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.opt { border: 1px solid var(--line); background: var(--surface-2); border-radius: 9px; padding: 6px 10px; font-size: 13px; font-weight: 600; }
+.opt[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.stepper { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; margin-left: auto; }
+.stepper button { border: 0; background: var(--surface-2); width: 32px; height: 30px; font-weight: 700; font-size: 16px; }
+.stepper span { padding: 0 8px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.sheet-actions { display: grid; grid-template-columns: auto 1fr; gap: 8px; margin-top: 16px; }
+.confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--bad); margin-top: 10px; }
+.confirm p { margin: 0; flex: 1 1 180px; }
+.menu-list { display: grid; gap: 8px; }
+.menu-list button { text-align: left; }
+.hist { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; }
+.hist small { color: var(--muted); display: block; font-weight: 400; }
+.hint { color: var(--muted); font-size: 13px; margin: 8px 2px 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .sheet { animation: up .22s ease-out; }
+  @keyframes up { from { transform: translateY(30px); opacity: .6; } }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <span class="tile" aria-hidden="true">1</span>
+      <div><h1>101 Okey Skor</h1><small id="sub">Skor tablosu</small></div>
+    </div>
+    <button class="icon-btn" id="menuBtn" hidden>Menü</button>
+  </header>
+  <main id="app"></main>
+</div>
+<div id="layer"></div>
+
+<script>
+(() => {
+const KEY = "okey101.v1";
+const COLORS = ["c0", "c1", "c2", "c3"];
+const MULTS = [
+  { m: 1, label: "Normal" },
+  { m: 2, label: "Okeyle / Çifte ×2" },
+  { m: 4, label: "Elden ×4" },
+];
+
+let store = load();
+let draft = null; // hand being edited
+
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if (s && typeof s === "object") return { game: s.game || null, history: s.history || [], setup: s.setup || null };
+  } catch (e) {}
+  return { game: null, history: [], setup: null };
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = n => (n > 0 ? "" : n < 0 ? "−" : "") + Math.abs(n);
+const $ = s => document.querySelector(s);
+
+/* ---------- scoring ---------- */
+function handScores(game, hand) {
+  const r = game.rules;
+  const mult = hand.mult || 1;
+  return game.players.map((_, i) => {
+    const p = hand.p[i] || {};
+    const pen = (p.pen || 0) * r.penalty;
+    if (hand.fin === i) return -r.finish * mult + pen;
+    if (game.mode === "team" && r.partnerZero && hand.fin != null && partnerOf(game, i) === hand.fin) return pen;
+    if (p.no) return r.notOpened * mult + pen;
+    return (Number(p.v) || 0) * (p.dbl ? 2 : 1) * mult + pen;
+  });
+}
+function partnerOf(game, i) { return game.teams[0].includes(i) ? game.teams[0].find(x => x !== i) : game.teams[1].find(x => x !== i); }
+function totals(game) {
+  const t = game.players.map(() => 0);
+  game.hands.forEach(h => handScores(game, h).forEach((s, i) => t[i] += s));
+  return t;
+}
+function sides(game) {
+  // returns ranking units: players (single) or teams
+  const t = totals(game);
+  if (game.mode === "team") {
+    return game.teams.map((tm, k) => ({
+      name: game.teamNames[k], sub: tm.map(i => `${game.players[i]} ${fmt(t[i])}`).join(" · "),
+      total: tm.reduce((a, i) => a + t[i], 0), color: COLORS[k === 0 ? 0 : 1],
+    }));
+  }
+  return game.players.map((n, i) => ({ name: n, sub: "", total: t[i], color: COLORS[i] }));
+}
+
+/* ---------- views ---------- */
+function render() {
+  $("#menuBtn").hidden = !store.game;
+  if (!store.game) return renderSetup();
+  renderGame();
+}
+
+function defaultSetup() {
+  return store.setup || {
+    mode: "single", count: 4, names: ["", "", "", ""], teamNames: ["A Takımı", "B Takımı"],
+    rules: { finish: 101, notOpened: 202, penalty: 101, partnerZero: false, hands: 0 },
+  };
+}
+
+function renderSetup() {
+  const st = defaultSetup();
+  $("#sub").textContent = "Yeni oyun";
+  const nameField = (i, ph) => `<label class="field ${COLORS[i]}"><span class="dot"></span>
+      <input id="name${i}" value="${esc(st.names[i] || "")}" placeholder="${ph}" autocomplete="off" maxlength="18"></label>`;
+  let players;
+  if (st.mode === "team") {
+    players = [0, 1].map(k => `<div class="team-box ${COLORS[k]}">
+        <div class="lbl"><input id="tname${k}" value="${esc(st.teamNames[k])}" style="border:0;background:transparent;font:inherit;color:inherit;width:100%;outline:none" maxlength="18"></div>
+        ${nameField(k === 0 ? 0 : 1, "Oyuncu " + (k === 0 ? 1 : 2))}
+        ${nameField(k === 0 ? 2 : 3, "Oyuncu " + (k === 0 ? 3 : 4))}
+      </div>`).join("");
+  } else {
+    players = `<div class="seg small" id="countSeg" style="grid-template-columns:repeat(3,1fr);margin-bottom:10px">
+        ${[2, 3, 4].map(c => `<button data-c="${c}" aria-pressed="${st.count === c}">${c} kişi</button>`).join("")}
+      </div>` + Array.from({ length: st.count }, (_, i) => nameField(i, "Oyuncu " + (i + 1))).join("");
+  }
+  $("#app").innerHTML = `
+    <h2>Oyun tipi</h2>
+    <div class="seg" id="modeSeg">
+      <button data-m="single" aria-pressed="${st.mode === "single"}">Tekli</button>
+      <button data-m="team" aria-pressed="${st.mode === "team"}">Eşli (2’ye 2)</button>
+    </div>
+    <h2>${st.mode === "team" ? "Takımlar" : "Oyuncular"}</h2>
+    ${players}
+    ${st.mode === "team" ? `<p class="hint">Karşılıklı oturanlar eş olur: 1 ile 3, 2 ile 4.</p>` : ""}
+    <h2>Kurallar</h2>
+    <div class="rules">
+      <label class="rule"><span>Biten oyuncu<small>Eksi olarak yazılır</small></span><input type="number" id="rFinish" inputmode="numeric" value="${st.rules.finish}"></label>
+      <label class="rule"><span>Açamayan cezası</span><input type="number" id="rNot" inputmode="numeric" value="${st.rules.notOpened}"></label>
+      <label class="rule"><span>Ceza (işlek / okey atma)</span><input type="number" id="rPen" inputmode="numeric" value="${st.rules.penalty}"></label>
+      <label class="rule"><span>Toplam el sayısı<small>0 = sınırsız</small></span><input type="number" id="rHands" inputmode="numeric" value="${st.rules.hands || 0}"></label>
+      ${st.mode === "team" ? `<label class="rule"><span>Eşi biterse el yazılmaz<small>Bitenin eşine sadece ceza yazılır</small></span><input type="checkbox" id="rPartner" ${st.rules.partnerZero ? "checked" : ""}></label>` : ""}
+    </div>
+    <div style="margin-top:22px"><button class="primary" id="startBtn">Oyunu başlat</button></div>
+    ${store.history.length ? `<h2>Geçmiş oyunlar</h2>${historyList()}` : ""}
+  `;
+  const collect = () => {
+    const s = defaultSetup();
+    const n = s.mode === "team" ? 4 : s.count;
+    for (let i = 0; i < 4; i++) { const el = $("#name" + i); if (el) s.names[i] = el.value.trim(); }
+    [0, 1].forEach(k => { const el = $("#tname" + k); if (el) s.teamNames[k] = el.value.trim() || (k ? "B Takımı" : "A Takımı"); });
+    s.rules.finish = Math.abs(parseInt($("#rFinish").value)) || 101;
+    s.rules.notOpened = parseInt($("#rNot").value) || 0;
+    s.rules.penalty = parseInt($("#rPen").value) || 0;
+    s.rules.hands = Math.max(0, parseInt($("#rHands").value) || 0);
+    const pz = $("#rPartner"); if (pz) s.rules.partnerZero = pz.checked;
+    store.setup = s; save();
+    return n;
+  };
+  $("#modeSeg").onclick = e => { const b = e.target.closest("button"); if (!b) return; collect(); store.setup.mode = b.dataset.m; save(); renderSetup(); };
+  const cs = $("#countSeg");
+  if (cs) cs.onclick = e => { const b = e.target.closest("button"); if (!b) return; collect(); store.setup.count = +b.dataset.c; save(); renderSetup(); };
+  $("#startBtn").onclick = () => {
+    const n = collect();
+    const s = store.setup;
+    const players = Array.from({ length: n }, (_, i) => s.names[i] || "Oyuncu " + (i + 1));
+    store.game = {
+      id: Date.now(), created: new Date().toISOString(), mode: s.mode, players,
+      teams: [[0, 2], [1, 3]], teamNames: [...s.teamNames], rules: { ...s.rules }, hands: [],
+    };
+    save(); render();
+  };
+  bindHistory();
+}
+
+function historyList() {
+  return `<div class="menu-list">${store.history.slice().reverse().map(g => {
+    const sd = sides(g).sort((a, b) => a.total - b.total);
+    const d = new Date(g.created);
+    return `<button class="ghost hist" data-hid="${g.id}"><span>${esc(sd[0].name)} kazandı
+      <small>${d.toLocaleDateString("tr-TR")} · ${g.hands.length} el · ${g.mode === "team" ? "Eşli" : "Tekli"}</small></span>
+      <span class="num" style="font-size:20px">${fmt(sd[0].total)}</span></button>`;
+  }).join("")}</div>`;
+}
+function bindHistory() {
+  document.querySelectorAll("[data-hid]").forEach(b => b.onclick = () => {
+    const g = store.history.find(x => String(x.id) === b.dataset.hid);
+    if (!g) return;
+    if (store.game && store.game.hands.length) store.history.push(store.game);
+    store.history = store.history.filter(x => x.id !== g.id);
+    store.game = g; save(); closeLayer(); render();
+  });
+}
+
+function renderGame() {
+  const g = store.game;
+  const sd = sides(g);
+  const order = sd.map((s, i) => ({ ...s, i })).sort((a, b) => a.total - b.total);
+  const best = order[0].total;
+  const max = g.rules.hands;
+  const done = max && g.hands.length >= max;
+  $("#sub").textContent = `${g.mode === "team" ? "Eşli" : "Tekli"} · ${g.hands.length}${max ? " / " + max : ""} el`;
+
+  const stand = order.map((s, r) => `
+    <div class="stand ${s.color} ${g.hands.length && s.total === best ? "lead" : ""}">
+      <span class="tile rank">${r + 1}</span>
+      <div class="who"><b>${esc(s.name)}${g.hands.length && s.total === best ? `<span class="pill">${done ? "Kazandı" : "Önde"}</span>` : ""}</b>${s.sub ? `<small>${esc(s.sub)}</small>` : ""}</div>
+      <div><span class="total">${fmt(s.total)}</span>${r > 0 && g.hands.length ? `<span class="diff">+${s.total - best} fark</span>` : ""}</div>
+    </div>`).join("");
+
+  // ledger
+  let head, rows, foot;
+  const tot = totals(g);
+  if (g.mode === "team") {
+    head = `<th class="n">El</th>` + g.teams.map((tm, k) => `<th class="${COLORS[k]}">${esc(g.teamNames[k])}<span class="bar"></span></th>`).join("");
+    rows = g.hands.map((h, hi) => {
+      const sc = handScores(g, h);
+      return `<tr data-h="${hi}"><td class="n">${hi + 1}</td>${g.teams.map(tm => {
+        const sum = tm.reduce((a, i) => a + sc[i], 0);
+        const fin = tm.includes(h.fin);
+        return `<td class="${fin ? "fin" : ""}">${fmt(sum)}<small>${tm.map(i => fmt(sc[i])).join(" · ")}</small></td>`;
+      }).join("")}</tr>`;
+    }).join("");
+    foot = `<td class="n">Σ</td>` + g.teams.map(tm => `<td class="num">${fmt(tm.reduce((a, i) => a + tot[i], 0))}</td>`).join("");
+  } else {
+    head = `<th class="n">El</th>` + g.players.map((p, i) => `<th class="${COLORS[i]}">${esc(p)}<span class="bar"></span></th>`).join("");
+    rows = g.hands.map((h, hi) => {
+      const sc = handScores(g, h);
+      return `<tr data-h="${hi}"><td class="n">${hi + 1}</td>${sc.map((s, i) => {
+        const p = h.p[i] || {};
+        const tag = h.fin === i ? (h.mult > 1 ? "bitti ×" + h.mult : "bitti") : p.no ? "açamadı" : p.dbl ? "çift" : p.pen ? p.pen + " ceza" : "";
+        return `<td class="${h.fin === i ? "fin" : ""}">${fmt(s)}${tag ? `<span class="tag">${tag}</span>` : ""}</td>`;
+      }).join("")}</tr>`;
+    }).join("");
+    foot = `<td class="n">Σ</td>` + tot.map(t => `<td>${fmt(t)}</td>`).join("");
+  }
+
+  $("#app").innerHTML = `
+    <div class="standings">${stand}</div>
+    <h2>Eller</h2>
+    <div class="ledger-wrap">
+      ${g.hands.length ? `<table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody><tfoot><tr>${foot}</tr></tfoot></table>`
+        : `<div class="empty"><b>Henüz el yok</b>İlk el bitince aşağıdan “El ekle”ye bas, herkesin elinde kalan taşların toplamını yaz.</div>`}
+    </div>
+    ${g.hands.length ? `<p class="hint">Bir eli düzeltmek veya silmek için satırına dokun.</p>` : ""}
+    <div class="bottombar"><button class="primary" id="addBtn">${done ? "Oyun bitti · Yeni oyun" : `+ ${g.hands.length + 1}. eli ekle`}</button></div>
+  `;
+  $("#addBtn").onclick = () => done ? openMenu(true) : openHand(null);
+  document.querySelectorAll("tbody tr").forEach(tr => tr.onclick = () => openHand(+tr.dataset.h));
+}
+
+/* ---------- hand sheet ---------- */
+function openHand(idx) {
+  const g = store.game;
+  draft = idx == null
+    ? { idx: null, fin: null, mult: 1, p: g.players.map(() => ({ v: "", no: false, dbl: false, pen: 0 })) }
+    : { idx, ...JSON.parse(JSON.stringify(g.hands[idx])) };
+  draft.confirmDel = false;
+  drawHand();
+}
+function drawHand() {
+  const g = store.game;
+  const sc = handScores(g, draft);
+  const isTeam = g.mode === "team";
+  const order = isTeam ? [0, 2, 1, 3] : g.players.map((_, i) => i);
+  const colorOf = i => isTeam ? COLORS[g.teams[0].includes(i) ? 0 : 1] : COLORS[i];
+  const zeroed = i => isTeam && g.rules.partnerZero && draft.fin != null && partnerOf(g, i) === draft.fin;
+
+  $("#layer").innerHTML = `
+    <div class="scrim" id="scrim"></div>
+    <div class="sheet" role="dialog" aria-label="El girişi"><div class="sheet-inner">
+      <div class="grab"></div>
+      <div class="sheet-head"><h3>${draft.idx == null ? g.hands.length + 1 : draft.idx + 1}. el</h3><button class="ghost" id="closeBtn">Kapat</button></div>
+      <h2>Kim bitti?</h2>
+      <div class="chips" id="finChips">
+        ${order.map(i => `<button class="chip ${colorOf(i)}" data-f="${i}" aria-pressed="${draft.fin === i}"><span class="dot"></span>${esc(g.players[i])}</button>`).join("")}
+        <button class="chip" data-f="-1" aria-pressed="${draft.fin == null}">Kimse</button>
+      </div>
+      ${draft.fin != null ? `<h2>Nasıl bitti?</h2><div class="chips" id="multChips">
+        ${MULTS.map(m => `<button class="chip" data-m="${m.m}" aria-pressed="${draft.mult === m.m}">${m.label}</button>`).join("")}
+      </div>` : ""}
+      <h2>Kalan taşlar</h2>
+      ${order.map(i => {
+        const p = draft.p[i]; const fin = draft.fin === i; const z = zeroed(i);
+        const dis = fin || z || p.no;
+        return `<div class="prow ${colorOf(i)} ${fin ? "is-fin" : ""}">
+          <div class="prow-top">
+            <span class="name">${esc(g.players[i])}</span>
+            <input id="v${i}" data-i="${i}" type="number" inputmode="numeric" pattern="[0-9]*" placeholder="${fin ? "bitti" : z ? "eşi bitti" : p.no ? "açamadı" : "0"}" value="${dis ? "" : esc(p.v)}" ${dis ? "disabled" : ""}>
+            <span class="result ${sc[i] < 0 ? "neg" : ""}" id="r${i}">${fmt(sc[i])}</span>
+          </div>
+          <div class="opts">
+            ${fin || z ? "" : `<button class="opt" data-no="${i}" aria-pressed="${p.no}">Açamadı</button>
+            <button class="opt" data-dbl="${i}" aria-pressed="${p.dbl}">Çift açtı</button>`}
+            <span class="stepper"><button data-pm="${i}" aria-label="Ceza azalt">−</button><span>${p.pen} ceza</span><button data-pp="${i}" aria-label="Ceza ekle">+</button></span>
+          </div>
+        </div>`;
+      }).join("")}
+      ${draft.confirmDel ? `<div class="confirm"><p>Bu el silinsin mi?</p><button class="ghost" id="delNo">Vazgeç</button><button class="ghost danger" id="delYes">Sil</button></div>` : ""}
+      <div class="sheet-actions">
+        ${draft.idx != null ? `<button class="ghost danger" id="delBtn">Sil</button>` : `<span></span>`}
+        <button class="primary" id="saveBtn">${draft.idx == null ? "Eli kaydet" : "Değişiklikleri kaydet"}</button>
+      </div>
+    </div></div>`;
+
+  const sheet = $(".sheet");
+  $("#scrim").onclick = $("#closeBtn").onclick = closeLayer;
+  $("#finChips").onclick = e => {
+    const b = e.target.closest("button"); if (!b) return;
+    const f = +b.dataset.f; draft.fin = f < 0 ? null : f;
+    if (draft.fin == null) draft.mult = 1;
+    redraw(sheet);
+  };
+  const mc = $("#multChips");
+  if (mc) mc.onclick = e => { const b = e.target.closest("button"); if (!b) return; draft.mult = +b.dataset.m; redraw(sheet); };
+  sheet.querySelectorAll("input[data-i]").forEach(inp => inp.oninput = () => {
+    const i = +inp.dataset.i; draft.p[i].v = inp.value.replace(/[^0-9]/g, "");
+    const s = handScores(g, draft)[i]; const r = $("#r" + i);
+    r.textContent = fmt(s); r.classList.toggle("neg", s < 0);
+  });
+  sheet.querySelectorAll("[data-no]").forEach(b => b.onclick = () => { const p = draft.p[+b.dataset.no]; p.no = !p.no; if (p.no) p.dbl = false; redraw(sheet); });
+  sheet.querySelectorAll("[data-dbl]").forEach(b => b.onclick = () => { const p = draft.p[+b.dataset.dbl]; p.dbl = !p.dbl; if (p.dbl) p.no = false; redraw(sheet); });
+  sheet.querySelectorAll("[data-pp]").forEach(b => b.onclick = () => { draft.p[+b.dataset.pp].pen++; redraw(sheet); });
+  sheet.querySelectorAll("[data-pm]").forEach(b => b.onclick = () => { const p = draft.p[+b.dataset.pm]; p.pen = Math.max(0, p.pen - 1); redraw(sheet); });
+  const del = $("#delBtn"); if (del) del.onclick = () => { draft.confirmDel = true; redraw(sheet); };
+  const dn = $("#delNo"); if (dn) dn.onclick = () => { draft.confirmDel = false; redraw(sheet); };
+  const dy = $("#delYes"); if (dy) dy.onclick = () => { g.hands.splice(draft.idx, 1); save(); closeLayer(); render(); };
+  $("#saveBtn").onclick = () => {
+    const h = { fin: draft.fin, mult: draft.mult, p: draft.p.map(p => ({ v: p.v === "" ? "" : String(+p.v), no: !!p.no, dbl: !!p.dbl, pen: p.pen || 0 })) };
+    if (draft.idx == null) g.hands.push(h); else g.hands[draft.idx] = h;
+    save(); closeLayer(); render();
+    window.scrollTo({ top: document.body.scrollHeight });
+  };
+}
+function redraw(sheet) { const y = sheet.scrollTop; drawHand(); $(".sheet").scrollTop = y; }
+function closeLayer() { $("#layer").innerHTML = ""; draft = null; }
+
+/* ---------- menu ---------- */
+function openMenu(confirmNew) {
+  const g = store.game;
+  $("#layer").innerHTML = `
+    <div class="scrim" id="scrim"></div>
+    <div class="sheet" role="dialog" aria-label="Menü"><div class="sheet-inner">
+      <div class="grab"></div>
+      <div class="sheet-head"><h3>Menü</h3><button class="ghost" id="closeBtn">Kapat</button></div>
+      <h2>Bu oyun</h2>
+      <div class="menu-list">
+        <button class="ghost" id="newBtn">Yeni oyun başlat</button>
+        <button class="ghost" id="sameBtn">Aynı oyuncularla yeniden başla</button>
+      </div>
+      <div id="confirmBox"></div>
+      <p class="hint">Biten oyun “Geçmiş oyunlar”a kaydedilir. Kurallar: biten −${g.rules.finish}, açamayan ${g.rules.notOpened}, ceza ${g.rules.penalty}.</p>
+      ${store.history.length ? `<h2>Geçmiş oyunlar</h2>${historyList()}` : ""}
+    </div></div>`;
+  $("#scrim").onclick = $("#closeBtn").onclick = closeLayer;
+  const ask = (msg, fn) => {
+    $("#confirmBox").innerHTML = `<div class="confirm"><p>${msg}</p><button class="ghost" id="cNo">Vazgeç</button><button class="ghost danger" id="cYes">Evet</button></div>`;
+    $("#cNo").onclick = () => $("#confirmBox").innerHTML = "";
+    $("#cYes").onclick = fn;
+  };
+  const archive = () => { if (g.hands.length) store.history.push(g); store.history = store.history.slice(-30); };
+  $("#newBtn").onclick = () => ask("Bu oyun kapanıp yeni oyun kurulsun mu?", () => { archive(); store.game = null; save(); closeLayer(); render(); window.scrollTo(0, 0); });
+  $("#sameBtn").onclick = () => ask("Skorlar sıfırlanıp aynı oyuncularla başlansın mı?", () => {
+    archive(); store.game = { ...JSON.parse(JSON.stringify(g)), id: Date.now(), created: new Date().toISOString(), hands: [] };
+    save(); closeLayer(); render(); window.scrollTo(0, 0);
+  });
+  if (confirmNew) $("#newBtn").click();
+  bindHistory();
+}
+$("#menuBtn").onclick = () => openMenu(false);
+
+render();
+})();
+</script>
