@@ -187,7 +187,10 @@ tfoot td { font-size: 22px; background: var(--surface-2); border-bottom: 0; }
 .prow-top input:disabled { opacity: .45; }
 .sign { flex: none; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); font: 700 24px/1 var(--display); color: var(--muted); }
 .sign[aria-pressed="true"] { background: var(--good); border-color: var(--good); color: var(--felt-fg); }
-.runtot { margin-left: auto; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.runtot { display: block; font-size: 12px; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+.prow .opts .opt { padding: 4px 9px; font-size: 12px; border-radius: 7px; }
+.prow { padding: 10px 12px; gap: 8px; }
+.prow + .prow { margin-top: 6px; }
 .result { min-width: 64px; text-align: right; font: 700 22px var(--display); font-variant-numeric: tabular-nums; }
 .result.neg { color: var(--good); }
 .opts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
@@ -464,6 +467,8 @@ function openHand(idx) {
   draft = { idx, v: vals, confirmDel: false, fresh: true };
   drawHand();
   draft.fresh = false;
+  const first = [...document.querySelectorAll(".sheet input[data-i]")].find(x => x.value === "") || $(".sheet input[data-i]");
+  if (first) first.focus();
 }
 const parse = s => { const n = parseInt(String(s).replace(/[^0-9-]/g, "")); return isNaN(n) ? 0 : n; };
 
@@ -479,22 +484,21 @@ function drawHand() {
     <div class="sheet ${draft.fresh ? "anim" : ""}" role="dialog" aria-label="El girişi"><div class="sheet-inner">
       <div class="grab"></div>
       <div class="sheet-head"><h3>${handNo}. el</h3><button class="ghost" id="closeBtn">Kapat</button></div>
-      <p class="hint">Herkesin bu eldeki puanını yaz. Biten için eksi tuşuna bas veya hızlı tuşu kullan.</p>
+      <p class="hint">Puanı yaz, Enter ile sıradakine geç. Biten için önce − tuşuna bas.</p>
       <div style="margin-top:12px">
-      ${order.map(i => {
+      ${order.map((i, k) => {
         const v = draft.v[i]; const neg = String(v).startsWith("-");
         return `<div class="prow ${colorOf(g, i)} ${neg ? "is-fin" : ""}" id="row${i}">
           <div class="prow-top">
-            <span class="name">${esc(g.players[i])}</span>
+            <span class="name">${esc(g.players[i])}<span class="runtot" id="t${i}">Toplam ${fmt(before[i] + parse(v))}</span></span>
             <button class="sign" data-sign="${i}" aria-pressed="${neg}" aria-label="Eksi yap">−</button>
-            <input id="v${i}" data-i="${i}" type="text" inputmode="numeric" autocomplete="off" placeholder="0" value="${esc(String(v).replace("-", ""))}">
+            <input id="v${i}" data-i="${i}" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="${k === order.length - 1 ? "done" : "next"}" placeholder="0" value="${esc(String(v).replace("-", ""))}">
           </div>
           <div class="opts">
             <button class="opt" data-q="${i}" data-val="${-q.finish}">−${q.finish}</button>
             <button class="opt" data-q="${i}" data-val="${-q.finish * 2}">−${q.finish * 2}</button>
             <button class="opt" data-q="${i}" data-val="${q.notOpened}">${q.notOpened}</button>
             <button class="opt" data-add="${i}">+${q.penalty} ceza</button>
-            <span class="runtot" id="t${i}">Toplam ${fmt(before[i] + parse(v))}</span>
           </div>
         </div>`;
       }).join("")}
@@ -507,8 +511,21 @@ function drawHand() {
     </div></div>`;
 
   const sheet = $(".sheet");
-  const setVal = (i, val) => { draft.v[i] = val; redraw(sheet); };
+  const setVal = (i, val) => {
+    draft.v[i] = val; redraw(sheet);
+    const k = order.indexOf(i); const nx = k < order.length - 1 ? $("#v" + order[k + 1]) : null;
+    if (nx) nx.focus();
+  };
   $("#scrim").onclick = $("#closeBtn").onclick = closeLayer;
+  const inputs = order.map(i => $("#v" + i));
+  inputs.forEach((inp, k) => {
+    inp.onfocus = () => inp.select();
+    inp.onkeydown = e => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      if (k < inputs.length - 1) inputs[k + 1].focus(); else $("#saveBtn").click();
+    };
+  });
   sheet.querySelectorAll("input[data-i]").forEach(inp => inp.oninput = () => {
     const i = +inp.dataset.i;
     if (inp.value.includes("-")) { $("[data-sign='" + i + "']").setAttribute("aria-pressed", "true"); }
