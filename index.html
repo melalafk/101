@@ -181,10 +181,13 @@ tfoot td { font-size: 22px; background: var(--surface-2); border-bottom: 0; }
 .prow-top .name { flex: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .prow-top .name::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--pc); margin-right: 8px; }
 .prow-top input {
-  width: 96px; text-align: right; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px;
+  width: 110px; text-align: right; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px;
   background: var(--surface-2); font: 700 22px var(--display); font-variant-numeric: tabular-nums;
 }
 .prow-top input:disabled { opacity: .45; }
+.sign { flex: none; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); font: 700 24px/1 var(--display); color: var(--muted); }
+.sign[aria-pressed="true"] { background: var(--good); border-color: var(--good); color: var(--felt-fg); }
+.runtot { margin-left: auto; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .result { min-width: 64px; text-align: right; font: 700 22px var(--display); font-variant-numeric: tabular-nums; }
 .result.neg { color: var(--good); }
 .opts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
@@ -213,7 +216,7 @@ tfoot td { font-size: 22px; background: var(--surface-2); border-bottom: 0; }
 .hist small { color: var(--muted); display: block; font-weight: 400; }
 .hint { color: var(--muted); font-size: 13px; margin: 8px 2px 0; }
 @media (prefers-reduced-motion: no-preference) {
-  .sheet { animation: up .22s ease-out; }
+  .sheet.anim { animation: up .22s ease-out; }
   @keyframes up { from { transform: translateY(30px); opacity: .6; } }
 }
 </style>
@@ -234,23 +237,8 @@ tfoot td { font-size: 22px; background: var(--surface-2); border-bottom: 0; }
 (() => {
 const KEY = "okey101.v1";
 const COLORS = ["c0", "c1", "c2", "c3"];
-const DEFAULT_RULES = {
-  finish: 101, notOpened: 202, penalty: 101, hands: 0, partnerZero: false,
-  dbl: 2, multFinisher: true, multNotOpened: true, multPenalty: false,
-  types: [
-    { id: "t1", n: "Normal", m: 1 },
-    { id: "t2", n: "Okeyle", m: 2 },
-    { id: "t3", n: "Çifte giderek", m: 2 },
-    { id: "t4", n: "Elden", m: 4 },
-  ],
-};
+const DEFAULT_QUICK = { finish: 101, notOpened: 202, penalty: 101 };
 const clone = o => JSON.parse(JSON.stringify(o));
-const normRules = r => {
-  const out = { ...clone(DEFAULT_RULES), ...(r || {}) };
-  if (!Array.isArray(out.types) || !out.types.length) out.types = clone(DEFAULT_RULES.types);
-  return out;
-};
-const newId = () => "t" + Math.random().toString(36).slice(2, 8);
 
 let store = load();
 let draft = null; // hand being edited
@@ -259,108 +247,57 @@ function load() {
   try {
     const s = JSON.parse(localStorage.getItem(KEY));
     if (s && typeof s === "object") {
-      const st = { game: s.game || null, history: s.history || [], setup: s.setup || null, presets: s.presets || [] };
-      if (st.game) st.game.rules = normRules(st.game.rules);
-      st.history.forEach(g => g.rules = normRules(g.rules));
-      if (st.setup) st.setup.rules = normRules(st.setup.rules);
+      const st = { game: s.game || null, history: s.history || [], setup: s.setup || null };
+      [st.game, ...st.history].forEach(fixGame);
       return st;
     }
   } catch (e) {}
-  return { game: null, history: [], setup: null, presets: [] };
+  return { game: null, history: [], setup: null };
+}
+function fixGame(g) {
+  if (!g) return;
+  const r = g.rules || {};
+  g.rules = { hands: r.hands || 0, finish: r.finish || 101, notOpened: r.notOpened || 202, penalty: r.penalty || 101 };
+  // older hands stored options (açamadı/çift/ceza); turn them into plain numbers once
+  g.hands = g.hands.map(h => h.s ? h : { s: legacyScores(g, h, r) });
+}
+function legacyScores(g, h, r) {
+  const types = r.types || [];
+  const t = types.find(x => x.id === h.ft);
+  const mult = h.fin == null ? 1 : (t ? t.m : h.mult || 1);
+  const fin = r.finish || 101, not = r.notOpened || 202, pen = r.penalty || 101, dbl = r.dbl || 2;
+  return g.players.map((_, i) => {
+    const p = h.p[i] || {};
+    const pe = (p.pen || 0) * pen * (r.multPenalty ? mult : 1);
+    if (h.fin === i) return -fin * (r.multFinisher === false ? 1 : mult) + pe;
+    if (g.mode === "team" && r.partnerZero && h.fin != null && partnerOf(g, i) === h.fin) return pe;
+    if (p.no) return not * (r.multNotOpened === false ? 1 : mult) + pe;
+    return (Number(p.v) || 0) * (p.dbl ? dbl : 1) * mult + pe;
+  });
 }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const fmt = n => (n > 0 ? "" : n < 0 ? "−" : "") + Math.abs(n);
+const fmt = n => (n < 0 ? "−" : "") + Math.abs(n);
 const $ = s => document.querySelector(s);
 
-/* ---------- scoring ---------- */
-function handScores(game, hand) {
-  const r = game.rules;
-  const mult = hand.fin == null ? 1 : handMult(game, hand);
-  return game.players.map((_, i) => {
-    const p = hand.p[i] || {};
-    const pen = (p.pen || 0) * r.penalty * (r.multPenalty ? mult : 1);
-    if (hand.fin === i) return -r.finish * (r.multFinisher ? mult : 1) + pen;
-    if (game.mode === "team" && r.partnerZero && hand.fin != null && partnerOf(game, i) === hand.fin) return pen;
-    if (p.no) return r.notOpened * (r.multNotOpened ? mult : 1) + pen;
-    return (Number(p.v) || 0) * (p.dbl ? r.dbl : 1) * mult + pen;
-  });
-}
-function handType(game, hand) { return game.rules.types.find(t => t.id === hand.ft) || null; }
-function handMult(game, hand) { const t = handType(game, hand); return t ? t.m : (hand.mult || 1); }
-
-/* ---------- rules editor (used in setup and mid-game) ---------- */
-function mountRules(box, rules, mode) {
-  let r = normRules(rules);
-  const row = (id, label, sub, val) => `<label class="rule"><span>${label}${sub ? `<small>${sub}</small>` : ""}</span><input type="number" id="${id}" inputmode="numeric" value="${val}"></label>`;
-  const tog = (id, label, sub, on) => `<label class="rule"><span>${label}${sub ? `<small>${sub}</small>` : ""}</span><input type="checkbox" id="${id}" ${on ? "checked" : ""}></label>`;
-  const draw = () => {
-    box.innerHTML = `<div class="rules">
-      ${row("rFinish", "Biten oyuncu", "Eksi olarak yazılır", r.finish)}
-      ${row("rNot", "Açamayan cezası", "", r.notOpened)}
-      ${row("rPen", "Ceza puanı", "İşlek taş, okey atma vb.", r.penalty)}
-      ${row("rDbl", "Çift açanın çarpanı", "Kalan taşlar bununla çarpılır", r.dbl)}
-      ${row("rHands", "Toplam el sayısı", "0 = sınırsız", r.hands || 0)}
-      ${mode === "team" ? tog("rPartner", "Eşi biterse el yazılmaz", "Bitenin eşine sadece ceza yazılır", r.partnerZero) : ""}
-    </div>
-    <h2>Bitiş türleri</h2>
-    <div class="rules" id="typeList">
-      ${r.types.map((t, k) => `<div class="rule type-row">
-        <input class="tname" data-tn="${k}" value="${esc(t.n)}" maxlength="20" aria-label="Bitiş adı">
-        <span class="xm">×</span><input type="number" data-tm="${k}" inputmode="numeric" value="${t.m}" aria-label="Çarpan">
-        <button class="tdel" data-tdel="${k}" aria-label="Sil" ${r.types.length < 2 ? "disabled" : ""}>Sil</button>
-      </div>`).join("")}
-      <button class="ghost" id="rtAdd">+ Bitiş türü ekle</button>
-    </div>
-    <h2>Çarpan kime uygulanır?</h2>
-    <div class="rules">
-      ${tog("rMultFin", "Bitene", "Örn. okeyle biten −" + r.finish * 2, r.multFinisher)}
-      ${tog("rMultNot", "Açamayana", "Örn. okeyle bitişte açamayan " + r.notOpened * 2, r.multNotOpened)}
-      ${tog("rMultPen", "Cezalara", "", r.multPenalty)}
-    </div>`;
-    box.querySelector("#rtAdd").onclick = () => { r = read(); r.types.push({ id: newId(), n: "Yeni bitiş", m: 2 }); draw(); };
-    box.querySelectorAll("[data-tdel]").forEach(b => b.onclick = () => { r = read(); if (r.types.length > 1) r.types.splice(+b.dataset.tdel, 1); draw(); });
-  };
-  const num = (id, d) => { const v = parseInt(box.querySelector("#" + id).value); return isNaN(v) ? d : v; };
-  const chk = (id, d) => { const el = box.querySelector("#" + id); return el ? el.checked : d; };
-  const read = () => {
-    const out = clone(r);
-    out.finish = Math.abs(num("rFinish", 101));
-    out.notOpened = num("rNot", 0);
-    out.penalty = num("rPen", 0);
-    out.dbl = Math.max(1, num("rDbl", 2));
-    out.hands = Math.max(0, num("rHands", 0));
-    out.partnerZero = chk("rPartner", r.partnerZero);
-    out.multFinisher = chk("rMultFin", true);
-    out.multNotOpened = chk("rMultNot", true);
-    out.multPenalty = chk("rMultPen", false);
-    out.types = r.types.map((t, k) => ({
-      id: t.id,
-      n: (box.querySelector(`[data-tn="${k}"]`).value.trim() || "Bitiş"),
-      m: Math.max(1, parseInt(box.querySelector(`[data-tm="${k}"]`).value) || 1),
-    }));
-    return out;
-  };
-  draw();
-  return { read, set: nr => { r = normRules(nr); draw(); } };
-}
-function partnerOf(game, i) { return game.teams[0].includes(i) ? game.teams[0].find(x => x !== i) : game.teams[1].find(x => x !== i); }
-function totals(game) {
+/* ---------- scoring: hands are the numbers people wrote, nothing more ---------- */
+function partnerOf(game, i) { const t = game.teams[0].includes(i) ? game.teams[0] : game.teams[1]; return t.find(x => x !== i); }
+function totals(game, upto) {
   const t = game.players.map(() => 0);
-  game.hands.forEach(h => handScores(game, h).forEach((s, i) => t[i] += s));
+  game.hands.slice(0, upto == null ? undefined : upto).forEach(h => h.s.forEach((v, i) => t[i] += v));
   return t;
 }
 function sides(game) {
-  // returns ranking units: players (single) or teams
   const t = totals(game);
   if (game.mode === "team") {
     return game.teams.map((tm, k) => ({
       name: game.teamNames[k], sub: tm.map(i => `${game.players[i]} ${fmt(t[i])}`).join(" · "),
-      total: tm.reduce((a, i) => a + t[i], 0), color: COLORS[k === 0 ? 0 : 1],
+      total: tm.reduce((a, i) => a + t[i], 0), color: COLORS[k],
     }));
   }
   return game.players.map((n, i) => ({ name: n, sub: "", total: t[i], color: COLORS[i] }));
 }
+const colorOf = (g, i) => g.mode === "team" ? COLORS[g.teams[0].includes(i) ? 0 : 1] : COLORS[i];
 
 /* ---------- views ---------- */
 function render() {
@@ -370,28 +307,51 @@ function render() {
 }
 
 function defaultSetup() {
-  return store.setup || {
-    mode: "single", count: 4, names: ["", "", "", ""], teamNames: ["A Takımı", "B Takımı"],
-    rules: clone(DEFAULT_RULES),
+  const s = store.setup || {};
+  return {
+    mode: s.mode || "single", count: s.count || 4,
+    names: s.names || ["", "", "", ""], teamNames: s.teamNames || ["A Takımı", "B Takımı"],
+    hands: (s.rules && s.rules.hands) || s.hands || 0,
+    quick: { ...DEFAULT_QUICK, ...(s.quick || {}), ...(s.rules ? { finish: s.rules.finish || 101, notOpened: s.rules.notOpened || 202, penalty: s.rules.penalty || 101 } : {}) },
+  };
+}
+
+function settingsHTML(hands, q) {
+  return `<div class="rules">
+    <label class="rule"><span>Kaç el oynanacak?<small>0 = sınırsız</small></span><input type="number" id="sHands" inputmode="numeric" value="${hands || 0}"></label>
+  </div>
+  <h2>Hızlı tuşlar</h2>
+  <p class="hint" style="margin:-4px 2px 10px">El girerken tek dokunuşla yazılan sayılar. Masanızın kuralına göre değiştirin.</p>
+  <div class="rules">
+    <label class="rule"><span>Biten</span><input type="number" id="qFinish" inputmode="numeric" value="${q.finish}"></label>
+    <label class="rule"><span>Açamayan</span><input type="number" id="qNot" inputmode="numeric" value="${q.notOpened}"></label>
+    <label class="rule"><span>Ceza</span><input type="number" id="qPen" inputmode="numeric" value="${q.penalty}"></label>
+  </div>`;
+}
+function readSettings() {
+  const n = (id, d) => { const v = parseInt($(id).value); return isNaN(v) ? d : Math.abs(v); };
+  return {
+    hands: n("#sHands", 0),
+    quick: { finish: n("#qFinish", 101), notOpened: n("#qNot", 202), penalty: n("#qPen", 101) },
   };
 }
 
 function renderSetup() {
   const st = defaultSetup();
   $("#sub").textContent = "Yeni oyun";
-  const nameField = (i, ph) => `<label class="field ${COLORS[i]}"><span class="dot"></span>
+  const nameField = (i, ph, c) => `<label class="field ${c}"><span class="dot"></span>
       <input id="name${i}" value="${esc(st.names[i] || "")}" placeholder="${ph}" autocomplete="off" maxlength="18"></label>`;
   let players;
   if (st.mode === "team") {
     players = [0, 1].map(k => `<div class="team-box ${COLORS[k]}">
-        <div class="lbl"><input id="tname${k}" value="${esc(st.teamNames[k])}" style="border:0;background:transparent;font:inherit;color:inherit;width:100%;outline:none" maxlength="18"></div>
-        ${nameField(k === 0 ? 0 : 1, "Oyuncu " + (k === 0 ? 1 : 2))}
-        ${nameField(k === 0 ? 2 : 3, "Oyuncu " + (k === 0 ? 3 : 4))}
+        <div class="lbl"><input id="tname${k}" value="${esc(st.teamNames[k])}" aria-label="Takım adı" style="border:0;background:transparent;font:inherit;color:inherit;width:100%;outline:none" maxlength="18"></div>
+        ${nameField(k, "Oyuncu " + (k + 1), COLORS[k])}
+        ${nameField(k + 2, "Oyuncu " + (k + 3), COLORS[k])}
       </div>`).join("");
   } else {
     players = `<div class="seg small" id="countSeg" style="grid-template-columns:repeat(3,1fr);margin-bottom:10px">
         ${[2, 3, 4].map(c => `<button data-c="${c}" aria-pressed="${st.count === c}">${c} kişi</button>`).join("")}
-      </div>` + Array.from({ length: st.count }, (_, i) => nameField(i, "Oyuncu " + (i + 1))).join("");
+      </div>` + Array.from({ length: st.count }, (_, i) => nameField(i, "Oyuncu " + (i + 1), COLORS[i])).join("");
   }
   $("#app").innerHTML = `
     <h2>Oyun tipi</h2>
@@ -402,57 +362,30 @@ function renderSetup() {
     <h2>${st.mode === "team" ? "Takımlar" : "Oyuncular"}</h2>
     ${players}
     ${st.mode === "team" ? `<p class="hint">Karşılıklı oturanlar eş olur: 1 ile 3, 2 ile 4.</p>` : ""}
-    <h2>Kurallar</h2>
-    <p class="hint" style="margin:-4px 2px 10px">Her masanın kuralı farklı. Kendi masanınkini ayarla, istersen adıyla kaydet.</p>
-    <div class="chips" id="presetChips"></div>
-    <div id="rulesBox" style="margin-top:10px"></div>
-    <div class="save-preset">
-      <input id="presetName" placeholder="Kural setine ad ver (örn. Kahve kuralı)" maxlength="24">
-      <button class="ghost" id="presetSave">Kaydet</button>
-    </div>
+    <h2>Ayarlar</h2>
+    ${settingsHTML(st.hands, st.quick)}
     <div style="margin-top:22px"><button class="primary" id="startBtn">Oyunu başlat</button></div>
     ${store.history.length ? `<h2>Geçmiş oyunlar</h2>${historyList()}` : ""}
   `;
-  const rulesUI = mountRules($("#rulesBox"), st.rules, st.mode);
-  const drawPresets = () => {
-    $("#presetChips").innerHTML = `<button class="chip" data-p="-1">Standart</button>` +
-      store.presets.map((p, k) => `<span class="preset"><button class="chip" data-p="${k}">${esc(p.name)}</button><button class="pdel" data-pd="${k}" aria-label="${esc(p.name)} sil">×</button></span>`).join("");
-    $("#presetChips").querySelectorAll("[data-p]").forEach(b => b.onclick = () => {
-      const k = +b.dataset.p;
-      rulesUI.set(k < 0 ? DEFAULT_RULES : store.presets[k].rules);
-      $("#presetChips").querySelectorAll("[data-p]").forEach(x => x.setAttribute("aria-pressed", x === b));
-    });
-    $("#presetChips").querySelectorAll("[data-pd]").forEach(b => b.onclick = () => { store.presets.splice(+b.dataset.pd, 1); save(); drawPresets(); });
-  };
-  drawPresets();
-  $("#presetSave").onclick = () => {
-    const name = $("#presetName").value.trim();
-    if (!name) { $("#presetName").focus(); $("#presetName").placeholder = "Önce bir ad yaz"; return; }
-    const rules = rulesUI.read();
-    const ex = store.presets.findIndex(p => p.name === name);
-    if (ex >= 0) store.presets[ex].rules = rules; else store.presets.push({ name, rules });
-    $("#presetName").value = ""; save(); drawPresets();
-    $("#presetSave").textContent = "Kaydedildi"; setTimeout(() => { const b = $("#presetSave"); if (b) b.textContent = "Kaydet"; }, 1500);
-  };
   const collect = () => {
     const s = defaultSetup();
-    const n = s.mode === "team" ? 4 : s.count;
     for (let i = 0; i < 4; i++) { const el = $("#name" + i); if (el) s.names[i] = el.value.trim(); }
     [0, 1].forEach(k => { const el = $("#tname" + k); if (el) s.teamNames[k] = el.value.trim() || (k ? "B Takımı" : "A Takımı"); });
-    s.rules = rulesUI.read();
+    Object.assign(s, readSettings());
     store.setup = s; save();
-    return n;
+    return s;
   };
   $("#modeSeg").onclick = e => { const b = e.target.closest("button"); if (!b) return; collect(); store.setup.mode = b.dataset.m; save(); renderSetup(); };
   const cs = $("#countSeg");
   if (cs) cs.onclick = e => { const b = e.target.closest("button"); if (!b) return; collect(); store.setup.count = +b.dataset.c; save(); renderSetup(); };
   $("#startBtn").onclick = () => {
-    const n = collect();
-    const s = store.setup;
-    const players = Array.from({ length: n }, (_, i) => s.names[i] || "Oyuncu " + (i + 1));
+    const s = collect();
+    const n = s.mode === "team" ? 4 : s.count;
     store.game = {
-      id: Date.now(), created: new Date().toISOString(), mode: s.mode, players,
-      teams: [[0, 2], [1, 3]], teamNames: [...s.teamNames], rules: clone(s.rules), hands: [],
+      id: Date.now(), created: new Date().toISOString(), mode: s.mode,
+      players: Array.from({ length: n }, (_, i) => s.names[i] || "Oyuncu " + (i + 1)),
+      teams: [[0, 2], [1, 3]], teamNames: [...s.teamNames],
+      rules: { hands: s.hands, ...s.quick }, hands: [],
     };
     save(); render();
   };
@@ -485,40 +418,28 @@ function renderGame() {
   const best = order[0].total;
   const max = g.rules.hands;
   const done = max && g.hands.length >= max;
+  const has = g.hands.length > 0;
   $("#sub").textContent = `${g.mode === "team" ? "Eşli" : "Tekli"} · ${g.hands.length}${max ? " / " + max : ""} el`;
 
   const stand = order.map((s, r) => `
-    <div class="stand ${s.color} ${g.hands.length && s.total === best ? "lead" : ""}">
+    <div class="stand ${s.color} ${has && s.total === best ? "lead" : ""}">
       <span class="tile rank">${r + 1}</span>
-      <div class="who"><b>${esc(s.name)}${g.hands.length && s.total === best ? `<span class="pill">${done ? "Kazandı" : "Önde"}</span>` : ""}</b>${s.sub ? `<small>${esc(s.sub)}</small>` : ""}</div>
-      <div><span class="total">${fmt(s.total)}</span>${r > 0 && g.hands.length ? `<span class="diff">+${s.total - best} fark</span>` : ""}</div>
+      <div class="who"><b>${esc(s.name)}${has && s.total === best ? `<span class="pill">${done ? "Kazandı" : "Önde"}</span>` : ""}</b>${s.sub ? `<small>${esc(s.sub)}</small>` : ""}</div>
+      <div><span class="total">${fmt(s.total)}</span>${r > 0 && has ? `<span class="diff">+${s.total - best} fark</span>` : ""}</div>
     </div>`).join("");
 
-  // ledger
   let head, rows, foot;
   const tot = totals(g);
   if (g.mode === "team") {
     head = `<th class="n">El</th>` + g.teams.map((tm, k) => `<th class="${COLORS[k]}">${esc(g.teamNames[k])}<span class="bar"></span></th>`).join("");
-    rows = g.hands.map((h, hi) => {
-      const sc = handScores(g, h);
-      return `<tr data-h="${hi}"><td class="n">${hi + 1}</td>${g.teams.map(tm => {
-        const sum = tm.reduce((a, i) => a + sc[i], 0);
-        const fin = tm.includes(h.fin);
-        return `<td class="${fin ? "fin" : ""}">${fmt(sum)}<small>${tm.map(i => fmt(sc[i])).join(" · ")}</small></td>`;
-      }).join("")}</tr>`;
-    }).join("");
-    foot = `<td class="n">Σ</td>` + g.teams.map(tm => `<td class="num">${fmt(tm.reduce((a, i) => a + tot[i], 0))}</td>`).join("");
+    rows = g.hands.map((h, hi) => `<tr data-h="${hi}"><td class="n">${hi + 1}</td>${g.teams.map(tm => {
+      const sum = tm.reduce((a, i) => a + h.s[i], 0);
+      return `<td class="${tm.some(i => h.s[i] < 0) ? "fin" : ""}">${fmt(sum)}<small>${tm.map(i => fmt(h.s[i])).join(" · ")}</small></td>`;
+    }).join("")}</tr>`).join("");
+    foot = `<td class="n">Σ</td>` + g.teams.map(tm => `<td>${fmt(tm.reduce((a, i) => a + tot[i], 0))}</td>`).join("");
   } else {
     head = `<th class="n">El</th>` + g.players.map((p, i) => `<th class="${COLORS[i]}">${esc(p)}<span class="bar"></span></th>`).join("");
-    rows = g.hands.map((h, hi) => {
-      const sc = handScores(g, h);
-      return `<tr data-h="${hi}"><td class="n">${hi + 1}</td>${sc.map((s, i) => {
-        const p = h.p[i] || {};
-        const ht = handType(g, h), hm = handMult(g, h);
-        const tag = h.fin === i ? (ht && hm > 1 ? ht.n.toLowerCase() + " ×" + hm : "bitti") : p.no ? "açamadı" : p.dbl ? "çift" : p.pen ? p.pen + " ceza" : "";
-        return `<td class="${h.fin === i ? "fin" : ""}">${fmt(s)}${tag ? `<span class="tag">${tag}</span>` : ""}</td>`;
-      }).join("")}</tr>`;
-    }).join("");
+    rows = g.hands.map((h, hi) => `<tr data-h="${hi}"><td class="n">${hi + 1}</td>${h.s.map(v => `<td class="${v < 0 ? "fin" : ""}">${fmt(v)}</td>`).join("")}</tr>`).join("");
     foot = `<td class="n">Σ</td>` + tot.map(t => `<td>${fmt(t)}</td>`).join("");
   }
 
@@ -526,64 +447,59 @@ function renderGame() {
     <div class="standings">${stand}</div>
     <h2>Eller</h2>
     <div class="ledger-wrap">
-      ${g.hands.length ? `<table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody><tfoot><tr>${foot}</tr></tfoot></table>`
-        : `<div class="empty"><b>Henüz el yok</b>İlk el bitince aşağıdan “El ekle”ye bas, herkesin elinde kalan taşların toplamını yaz.</div>`}
+      ${has ? `<table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody><tfoot><tr>${foot}</tr></tfoot></table>`
+        : `<div class="empty"><b>Henüz el yok</b>El bitince aşağıdan “El ekle”ye bas ve herkesin puanını deftere yazar gibi gir.</div>`}
     </div>
-    ${g.hands.length ? `<p class="hint">Bir eli düzeltmek veya silmek için satırına dokun.</p>` : ""}
+    ${has ? `<p class="hint">Bir eli düzeltmek veya silmek için satırına dokun.</p>` : ""}
     <div class="bottombar"><button class="primary" id="addBtn">${done ? "Oyun bitti · Yeni oyun" : `+ ${g.hands.length + 1}. eli ekle`}</button></div>
   `;
   $("#addBtn").onclick = () => done ? openMenu(true) : openHand(null);
   document.querySelectorAll("tbody tr").forEach(tr => tr.onclick = () => openHand(+tr.dataset.h));
 }
 
-/* ---------- hand sheet ---------- */
+/* ---------- hand sheet: one number per player ---------- */
 function openHand(idx) {
   const g = store.game;
-  draft = idx == null
-    ? { idx: null, fin: null, ft: g.rules.types[0].id, mult: 1, p: g.players.map(() => ({ v: "", no: false, dbl: false, pen: 0 })) }
-    : { idx, ...JSON.parse(JSON.stringify(g.hands[idx])) };
-  draft.confirmDel = false;
+  const vals = idx == null ? g.players.map(() => "") : g.hands[idx].s.map(String);
+  draft = { idx, v: vals, confirmDel: false, fresh: true };
   drawHand();
+  draft.fresh = false;
 }
+const parse = s => { const n = parseInt(String(s).replace(/[^0-9-]/g, "")); return isNaN(n) ? 0 : n; };
+
 function drawHand() {
   const g = store.game;
-  const sc = handScores(g, draft);
-  const isTeam = g.mode === "team";
-  const order = isTeam ? [0, 2, 1, 3] : g.players.map((_, i) => i);
-  const colorOf = i => isTeam ? COLORS[g.teams[0].includes(i) ? 0 : 1] : COLORS[i];
-  const zeroed = i => isTeam && g.rules.partnerZero && draft.fin != null && partnerOf(g, i) === draft.fin;
+  const q = g.rules;
+  const order = g.mode === "team" ? [0, 2, 1, 3] : g.players.map((_, i) => i);
+  const before = totals(g, draft.idx == null ? g.hands.length : draft.idx);
+  const handNo = draft.idx == null ? g.hands.length + 1 : draft.idx + 1;
 
   $("#layer").innerHTML = `
     <div class="scrim" id="scrim"></div>
-    <div class="sheet" role="dialog" aria-label="El girişi"><div class="sheet-inner">
+    <div class="sheet ${draft.fresh ? "anim" : ""}" role="dialog" aria-label="El girişi"><div class="sheet-inner">
       <div class="grab"></div>
-      <div class="sheet-head"><h3>${draft.idx == null ? g.hands.length + 1 : draft.idx + 1}. el</h3><button class="ghost" id="closeBtn">Kapat</button></div>
-      <h2>Kim bitti?</h2>
-      <div class="chips" id="finChips">
-        ${order.map(i => `<button class="chip ${colorOf(i)}" data-f="${i}" aria-pressed="${draft.fin === i}"><span class="dot"></span>${esc(g.players[i])}</button>`).join("")}
-        <button class="chip" data-f="-1" aria-pressed="${draft.fin == null}">Kimse</button>
-      </div>
-      ${draft.fin != null ? `<h2>Nasıl bitti?</h2><div class="chips" id="multChips">
-        ${g.rules.types.map(t => `<button class="chip" data-t="${t.id}" aria-pressed="${draft.ft === t.id}">${esc(t.n)}${t.m > 1 ? " ×" + t.m : ""}</button>`).join("")}
-      </div>` : ""}
-      <h2>Kalan taşlar</h2>
+      <div class="sheet-head"><h3>${handNo}. el</h3><button class="ghost" id="closeBtn">Kapat</button></div>
+      <p class="hint">Herkesin bu eldeki puanını yaz. Biten için eksi tuşuna bas veya hızlı tuşu kullan.</p>
+      <div style="margin-top:12px">
       ${order.map(i => {
-        const p = draft.p[i]; const fin = draft.fin === i; const z = zeroed(i);
-        const dis = fin || z || p.no;
-        return `<div class="prow ${colorOf(i)} ${fin ? "is-fin" : ""}">
+        const v = draft.v[i]; const neg = String(v).startsWith("-");
+        return `<div class="prow ${colorOf(g, i)} ${neg ? "is-fin" : ""}" id="row${i}">
           <div class="prow-top">
             <span class="name">${esc(g.players[i])}</span>
-            <input id="v${i}" data-i="${i}" type="number" inputmode="numeric" pattern="[0-9]*" placeholder="${fin ? "bitti" : z ? "eşi bitti" : p.no ? "açamadı" : "0"}" value="${dis ? "" : esc(p.v)}" ${dis ? "disabled" : ""}>
-            <span class="result ${sc[i] < 0 ? "neg" : ""}" id="r${i}">${fmt(sc[i])}</span>
+            <button class="sign" data-sign="${i}" aria-pressed="${neg}" aria-label="Eksi yap">−</button>
+            <input id="v${i}" data-i="${i}" type="text" inputmode="numeric" autocomplete="off" placeholder="0" value="${esc(String(v).replace("-", ""))}">
           </div>
           <div class="opts">
-            ${fin || z ? "" : `<button class="opt" data-no="${i}" aria-pressed="${p.no}">Açamadı</button>
-            <button class="opt" data-dbl="${i}" aria-pressed="${p.dbl}">Çift açtı</button>`}
-            <span class="stepper"><button data-pm="${i}" aria-label="Ceza azalt">−</button><span>${p.pen} ceza</span><button data-pp="${i}" aria-label="Ceza ekle">+</button></span>
+            <button class="opt" data-q="${i}" data-val="${-q.finish}">−${q.finish}</button>
+            <button class="opt" data-q="${i}" data-val="${-q.finish * 2}">−${q.finish * 2}</button>
+            <button class="opt" data-q="${i}" data-val="${q.notOpened}">${q.notOpened}</button>
+            <button class="opt" data-add="${i}">+${q.penalty} ceza</button>
+            <span class="runtot" id="t${i}">Toplam ${fmt(before[i] + parse(v))}</span>
           </div>
         </div>`;
       }).join("")}
-      ${draft.confirmDel ? `<div class="confirm"><p>Bu el silinsin mi?</p><button class="ghost" id="delNo">Vazgeç</button><button class="ghost danger" id="delYes">Sil</button></div>` : ""}
+      </div>
+      ${draft.confirmDel ? `<div class="confirm"><p>${handNo}. el silinsin mi?</p><button class="ghost" id="delNo">Vazgeç</button><button class="ghost danger" id="delYes">Sil</button></div>` : ""}
       <div class="sheet-actions">
         ${draft.idx != null ? `<button class="ghost danger" id="delBtn">Sil</button>` : `<span></span>`}
         <button class="primary" id="saveBtn">${draft.idx == null ? "Eli kaydet" : "Değişiklikleri kaydet"}</button>
@@ -591,29 +507,35 @@ function drawHand() {
     </div></div>`;
 
   const sheet = $(".sheet");
+  const setVal = (i, val) => { draft.v[i] = val; redraw(sheet); };
   $("#scrim").onclick = $("#closeBtn").onclick = closeLayer;
-  $("#finChips").onclick = e => {
-    const b = e.target.closest("button"); if (!b) return;
-    const f = +b.dataset.f; draft.fin = f < 0 ? null : f;
-    if (draft.fin == null || !handType(g, draft)) draft.ft = g.rules.types[0].id;
-    redraw(sheet);
-  };
-  const mc = $("#multChips");
-  if (mc) mc.onclick = e => { const b = e.target.closest("button"); if (!b) return; draft.ft = b.dataset.t; redraw(sheet); };
   sheet.querySelectorAll("input[data-i]").forEach(inp => inp.oninput = () => {
-    const i = +inp.dataset.i; draft.p[i].v = inp.value.replace(/[^0-9]/g, "");
-    const s = handScores(g, draft)[i]; const r = $("#r" + i);
-    r.textContent = fmt(s); r.classList.toggle("neg", s < 0);
+    const i = +inp.dataset.i;
+    if (inp.value.includes("-")) { $("[data-sign='" + i + "']").setAttribute("aria-pressed", "true"); }
+    const digits = inp.value.replace(/[^0-9]/g, "");
+    if (inp.value !== digits) inp.value = digits;
+    const neg = $("[data-sign='" + i + "']").getAttribute("aria-pressed") === "true";
+    draft.v[i] = digits === "" ? "" : (neg ? "-" : "") + digits;
+    $("#t" + i).textContent = "Toplam " + fmt(before[i] + parse(draft.v[i]));
+    $("#row" + i).classList.toggle("is-fin", neg && digits !== "");
   });
-  sheet.querySelectorAll("[data-no]").forEach(b => b.onclick = () => { const p = draft.p[+b.dataset.no]; p.no = !p.no; if (p.no) p.dbl = false; redraw(sheet); });
-  sheet.querySelectorAll("[data-dbl]").forEach(b => b.onclick = () => { const p = draft.p[+b.dataset.dbl]; p.dbl = !p.dbl; if (p.dbl) p.no = false; redraw(sheet); });
-  sheet.querySelectorAll("[data-pp]").forEach(b => b.onclick = () => { draft.p[+b.dataset.pp].pen++; redraw(sheet); });
-  sheet.querySelectorAll("[data-pm]").forEach(b => b.onclick = () => { const p = draft.p[+b.dataset.pm]; p.pen = Math.max(0, p.pen - 1); redraw(sheet); });
+  sheet.querySelectorAll("[data-sign]").forEach(b => b.onclick = () => {
+    const i = +b.dataset.sign; const v = String(draft.v[i]);
+    const neg = b.getAttribute("aria-pressed") !== "true";
+    b.setAttribute("aria-pressed", neg);
+    const d = v.replace("-", "");
+    draft.v[i] = d === "" ? "" : (neg ? "-" : "") + d;
+    $("#t" + i).textContent = "Toplam " + fmt(before[i] + parse(draft.v[i]));
+    $("#row" + i).classList.toggle("is-fin", neg && d !== "");
+    if (neg && d === "") $("#v" + i).focus();
+  });
+  sheet.querySelectorAll("[data-q]").forEach(b => b.onclick = () => setVal(+b.dataset.q, b.dataset.val));
+  sheet.querySelectorAll("[data-add]").forEach(b => b.onclick = () => { const i = +b.dataset.add; setVal(i, String(parse(draft.v[i]) + q.penalty)); });
   const del = $("#delBtn"); if (del) del.onclick = () => { draft.confirmDel = true; redraw(sheet); };
   const dn = $("#delNo"); if (dn) dn.onclick = () => { draft.confirmDel = false; redraw(sheet); };
   const dy = $("#delYes"); if (dy) dy.onclick = () => { g.hands.splice(draft.idx, 1); save(); closeLayer(); render(); };
   $("#saveBtn").onclick = () => {
-    const h = { fin: draft.fin, ft: draft.ft, mult: handMult(g, draft), p: draft.p.map(p => ({ v: p.v === "" ? "" : String(+p.v), no: !!p.no, dbl: !!p.dbl, pen: p.pen || 0 })) };
+    const h = { s: draft.v.map(parse) };
     if (draft.idx == null) g.hands.push(h); else g.hands[draft.idx] = h;
     save(); closeLayer(); render();
     window.scrollTo({ top: document.body.scrollHeight });
@@ -627,17 +549,17 @@ function openMenu(confirmNew) {
   const g = store.game;
   $("#layer").innerHTML = `
     <div class="scrim" id="scrim"></div>
-    <div class="sheet" role="dialog" aria-label="Menü"><div class="sheet-inner">
+    <div class="sheet anim" role="dialog" aria-label="Menü"><div class="sheet-inner">
       <div class="grab"></div>
       <div class="sheet-head"><h3>Menü</h3><button class="ghost" id="closeBtn">Kapat</button></div>
       <h2>Bu oyun</h2>
       <div class="menu-list">
         <button class="ghost" id="newBtn">Yeni oyun başlat</button>
-        <button class="ghost" id="rulesBtn">Kuralları düzenle</button>
         <button class="ghost" id="sameBtn">Aynı oyuncularla yeniden başla</button>
+        <button class="ghost" id="setBtn">Ayarlar</button>
       </div>
       <div id="confirmBox"></div>
-      <p class="hint">Biten oyun “Geçmiş oyunlar”a kaydedilir. Kurallar: biten −${g.rules.finish}, açamayan ${g.rules.notOpened}, ceza ${g.rules.penalty}, çift ×${g.rules.dbl}. Bitişler: ${g.rules.types.map(t => esc(t.n) + " ×" + t.m).join(", ")}.</p>
+      <p class="hint">Biten oyun “Geçmiş oyunlar”a kaydedilir.</p>
       ${store.history.length ? `<h2>Geçmiş oyunlar</h2>${historyList()}` : ""}
     </div></div>`;
   $("#scrim").onclick = $("#closeBtn").onclick = closeLayer;
@@ -649,30 +571,27 @@ function openMenu(confirmNew) {
   const archive = () => { if (g.hands.length) store.history.push(g); store.history = store.history.slice(-30); };
   $("#newBtn").onclick = () => ask("Bu oyun kapanıp yeni oyun kurulsun mu?", () => { archive(); store.game = null; save(); closeLayer(); render(); window.scrollTo(0, 0); });
   $("#sameBtn").onclick = () => ask("Skorlar sıfırlanıp aynı oyuncularla başlansın mı?", () => {
-    archive(); store.game = { ...JSON.parse(JSON.stringify(g)), id: Date.now(), created: new Date().toISOString(), hands: [] };
+    archive(); store.game = { ...clone(g), id: Date.now(), created: new Date().toISOString(), hands: [] };
     save(); closeLayer(); render(); window.scrollTo(0, 0);
   });
-  $("#rulesBtn").onclick = openRules;
+  $("#setBtn").onclick = openSettings;
   if (confirmNew) $("#newBtn").click();
   bindHistory();
 }
-$("#menuBtn").onclick = () => openMenu(false);
-
-function openRules() {
+function openSettings() {
   const g = store.game;
   $("#layer").innerHTML = `
     <div class="scrim" id="scrim"></div>
-    <div class="sheet" role="dialog" aria-label="Kurallar"><div class="sheet-inner">
+    <div class="sheet anim" role="dialog" aria-label="Ayarlar"><div class="sheet-inner">
       <div class="grab"></div>
-      <div class="sheet-head"><h3>Kurallar</h3><button class="ghost" id="closeBtn">Kapat</button></div>
-      <p class="hint">Değiştirdiğinde oynanmış eller de yeni kurala göre yeniden hesaplanır.</p>
-      <div id="rulesBox" style="margin-top:12px"></div>
-      <div style="margin-top:16px"><button class="primary" id="rulesSave">Kaydet ve yeniden hesapla</button></div>
+      <div class="sheet-head"><h3>Ayarlar</h3><button class="ghost" id="closeBtn">Kapat</button></div>
+      <div style="margin-top:12px">${settingsHTML(g.rules.hands, g.rules)}</div>
+      <div style="margin-top:16px"><button class="primary" id="setSave">Kaydet</button></div>
     </div></div>`;
-  const ui = mountRules($("#rulesBox"), g.rules, g.mode);
   $("#scrim").onclick = $("#closeBtn").onclick = closeLayer;
-  $("#rulesSave").onclick = () => { g.rules = ui.read(); save(); closeLayer(); render(); };
+  $("#setSave").onclick = () => { const s = readSettings(); g.rules = { hands: s.hands, ...s.quick }; save(); closeLayer(); render(); };
 }
+$("#menuBtn").onclick = () => openMenu(false);
 
 render();
 })();
