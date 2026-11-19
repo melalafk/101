@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f5a43">
+<title>Masa101</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: top bar with view switch (Masa / Tezgâh / Salon); each view is a single column on phones, wider grids on tablets. */
+:root {
+  --bg: #eef1ec; --surface: #ffffff; --surface-2: #f5f7f3; --fg: #1c2420; --muted: #66726b; --line: #d8ded6;
+  --felt: #1f5a43; --felt-2: #17463a; --felt-fg: #ffffff; --tile: #fbf8ef; --tile-edge: #e3dcc6;
+  --t-red: #c8312b; --t-blue: #1f5fae; --t-black: #23262b; --t-yellow: #c98a06;
+  --good: #1f7a4d; --warn: #b86e00; --bad: #b3261e; --warn-bg: #fff3dc; --new-bg: #e7f1ff;
+  --display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1713; --surface: #18221d; --surface-2: #1e2a24; --fg: #e8eee9; --muted: #93a39a; --line: #2c3a33;
+    --felt: #2e7a5c; --felt-2: #1f5a43; --tile: #2a2a24; --tile-edge: #3a392f;
+    --t-red: #ff6b5e; --t-blue: #6aa5ff; --t-black: #d6dad7; --t-yellow: #f2bd3d;
+    --good: #5fd39a; --warn: #f2bd3d; --bad: #ff7b72; --warn-bg: #3a2e14; --new-bg: #16283f; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.45 var(--body); -webkit-tap-highlight-color: transparent;
+  padding-top: env(safe-area-inset-top, 0px); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--felt); }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--t-blue); outline-offset: 2px; }
+[hidden] { display: none !important; }
+.gut { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1100px; margin: 0 auto; }
+.num { font-family: var(--display); font-variant-numeric: tabular-nums; }
+
+/* top bar */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 8; background: var(--felt); color: var(--felt-fg); }
+.top .wrap { display: flex; align-items: center; gap: 12px; padding-block: 10px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; margin-right: auto; }
+.tile { display: inline-grid; place-items: center; border-radius: 6px; background: var(--tile); border: 1px solid var(--tile-edge); box-shadow: 0 2px 0 var(--tile-edge); font-family: var(--display); font-weight: 700; color: var(--t-red); }
+.brand .tile { width: 28px; height: 36px; font-size: 18px; }
+.brand b { font: 700 22px/1 var(--display); letter-spacing: .02em; display: block; }
+.brand small { font-size: 11px; opacity: .8; }
+.views { display: flex; background: rgba(0,0,0,.18); border-radius: 12px; padding: 3px; gap: 2px; }
+.views a { color: var(--felt-fg); text-decoration: none; padding: 7px 12px; border-radius: 9px; font-weight: 600; font-size: 14px; opacity: .8; position: relative; }
+.views a[aria-current="page"] { background: var(--felt-fg); color: var(--felt); opacity: 1; }
+.badge { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; border-radius: 9px; background: var(--bad); color: #fff; font: 700 11px/18px var(--body); text-align: center; padding: 0 4px; }
+.demo-strip { background: var(--felt-2); color: var(--felt-fg); font-size: 12px; }
+.demo-strip .wrap { padding-block: 6px; display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.demo-strip button { background: transparent; border: 1px solid rgba(255,255,255,.35); color: var(--felt-fg); border-radius: 8px; padding: 3px 8px; font-size: 12px; }
+
+main { padding-block: 16px 120px; }
+h2 { font: 600 12px/1 var(--body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 22px 0 10px; }
+h2:first-child { margin-top: 4px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+.primary { border: 0; border-radius: 14px; padding: 14px 18px; background: var(--felt); color: var(--felt-fg); font: 700 18px var(--display); letter-spacing: .04em; }
+.primary:disabled { opacity: .45; }
+.ghost { border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 10px 14px; font-weight: 600; }
+.danger { color: var(--bad); }
+.hint { color: var(--muted); font-size: 13px; margin: 8px 2px 0; }
+.seg { display: inline-grid; grid-auto-flow: column; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 3px; gap: 3px; }
+.seg button { border: 0; background: transparent; padding: 8px 14px; border-radius: 9px; font-weight: 600; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.c0 { --pc: var(--t-red); } .c1 { --pc: var(--t-blue); } .c2 { --pc: var(--t-black); } .c3 { --pc: var(--t-yellow); }
+.money { font-family: var(--display); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* masa view */
+.table-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.table-head h1 { margin: 0; font: 700 34px/1 var(--display); }
+.table-head select { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 6px 8px; }
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 4px; margin-top: 14px; }
+.tabs button { border: 0; background: transparent; padding: 10px; border-radius: 10px; font-weight: 600; color: var(--muted); }
+.tabs button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.tabs .cnt { font-family: var(--display); font-weight: 700; color: var(--felt); margin-left: 4px; }
+
+.stand { display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 12px; padding: 10px 14px; }
+.stand + .stand { margin-top: 8px; }
+.stand.lead { border-color: var(--felt); box-shadow: inset 0 0 0 1px var(--felt); }
+.stand .tile { width: 28px; height: 36px; font-size: 18px; color: var(--pc); }
+.stand b { font-weight: 600; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stand small { color: var(--muted); font-size: 12px; display: block; }
+.stand .total { font: 700 28px/1 var(--display); font-variant-numeric: tabular-nums; text-align: right; }
+.pill { display: inline-block; font: 600 10px/1 var(--body); text-transform: uppercase; letter-spacing: .08em; padding: 3px 6px; border-radius: 99px; background: var(--felt); color: var(--felt-fg); vertical-align: 2px; margin-left: 6px; }
+.pill.pay { background: var(--warn); }
+.ledger { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { padding: 9px 8px; text-align: center; border-bottom: 1px solid var(--line); }
+th { font: 600 12px var(--body); color: var(--muted); }
+td { font: 600 18px var(--display); }
+td small { display: block; font: 500 11px var(--body); color: var(--muted); }
+td.fin { color: var(--good); }
+th.n, td.n { width: 34px; color: var(--muted); font-size: 12px; }
+tfoot td { background: var(--surface-2); border-bottom: 0; font-size: 21px; }
+tbody tr { cursor: pointer; }
+.field { display: flex; align-items: center; gap: 10px; padding: 2px 12px; }
+.field + .field { margin-top: 8px; }
+.field .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--pc); flex: none; }
+.field input { border: 0; background: transparent; padding: 10px 0; flex: 1; min-width: 0; outline: none; font-size: 16px; }
+.setup-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.team-lbl { font: 700 16px var(--display); color: var(--pc); margin: 0 0 8px 2px; }
+
+.cats { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 8px 14px; font-weight: 600; font-size: 14px; white-space: nowrap; }
+.chip[aria-pressed="true"] { background: var(--felt); border-color: var(--felt); color: var(--felt-fg); }
+.menu { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); margin-top: 12px; }
+.item { display: grid; gap: 8px; padding: 12px; }
+.item b { font-weight: 600; }
+.item .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.item .price { font: 700 20px var(--display); }
+.qty { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.qty button { border: 0; background: var(--surface-2); width: 36px; height: 34px; font-weight: 700; font-size: 18px; }
+.qty span { min-width: 26px; text-align: center; font: 700 18px var(--display); }
+.item.in { border-color: var(--felt); box-shadow: inset 0 0 0 1px var(--felt); }
+.add { border: 0; background: var(--felt); color: var(--felt-fg); border-radius: 10px; height: 34px; padding: 0 14px; font-weight: 700; }
+
+.my-orders { display: grid; gap: 8px; }
+.ord-line { display: flex; justify-content: space-between; gap: 10px; padding: 10px 14px; align-items: center; }
+.ord-line .what { min-width: 0; }
+.ord-line small { color: var(--muted); display: block; font-size: 12px; }
+.status { font: 600 11px/1 var(--body); text-transform: uppercase; letter-spacing: .06em; padding: 5px 8px; border-radius: 99px; white-space: nowrap; }
+.st-new { background: var(--new-bg); color: var(--t-blue); }
+.st-prep { background: var(--warn-bg); color: var(--warn); }
+.st-done { background: var(--surface-2); color: var(--good); }
+
+.bill-lines { padding: 6px 14px; }
+.bill-line { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+.bill-line:last-child { border-bottom: 0; }
+.bill-total { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 14px; background: var(--surface-2); border-top: 1px solid var(--line); border-radius: 0 0 14px 14px; }
+.bill-total .money { font-size: 30px; }
+.payer { padding: 14px; display: grid; gap: 10px; margin-top: 12px; border-color: var(--warn); }
+.payer .big { font: 700 26px/1.1 var(--display); }
+.payer .split { display: grid; gap: 6px; }
+.payer .split div { display: flex; justify-content: space-between; }
+
+.bottombar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; padding-top: 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, var(--bg) 70%, transparent); }
+.bottombar .wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-width: 700px; }
+.bottombar .wide { grid-column: 1 / -1; }
+.bottombar .ghost { padding: 13px; box-shadow: 0 4px 14px rgba(0,0,0,.08); }
+.bottombar .ghost.on { border-color: var(--warn); color: var(--warn); }
+.cartbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; }
+
+/* counter */
+.calls { display: grid; gap: 8px; margin-bottom: 14px; }
+.call { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: var(--warn-bg); border-color: var(--warn); }
+.call b { font: 700 22px var(--display); }
+.board { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); align-items: start; }
+.col h2 { display: flex; justify-content: space-between; margin-top: 0; }
+.col-list { display: grid; gap: 8px; }
+.ticket { padding: 12px 14px; display: grid; gap: 8px; }
+.ticket.fresh { animation: pulse 1.2s ease-out 2; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(31,95,174,.55); } 100% { box-shadow: 0 0 0 14px rgba(31,95,174,0); } }
+.ticket .th { display: flex; justify-content: space-between; align-items: baseline; }
+.ticket .th b { font: 700 26px/1 var(--display); }
+.ticket .th small { color: var(--muted); }
+.ticket ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; }
+.ticket li { font-size: 16px; }
+.ticket li .q { font: 700 18px var(--display); color: var(--felt); margin-right: 6px; }
+.empty { padding: 20px; text-align: center; color: var(--muted); }
+
+/* salon */
+.salon { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.tcard { padding: 14px; display: grid; gap: 6px; text-align: left; cursor: pointer; }
+.tcard.idle { opacity: .6; }
+.tcard .th { display: flex; justify-content: space-between; align-items: center; }
+.tcard .th b { font: 700 24px var(--display); }
+.tcard .money { font-size: 26px; }
+.tcard small { color: var(--muted); font-size: 12px; }
+.tcard .tags { display: flex; gap: 4px; flex-wrap: wrap; }
+.summary { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-bottom: 14px; }
+.summary .card { padding: 12px 14px; }
+.summary small { color: var(--muted); font-size: 12px; display: block; }
+.summary .money { font-size: 28px; }
+
+/* sheet */
+.scrim { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 20; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 21; max-height: 92vh; overflow-y: auto; background: var(--bg); border-radius: 20px 20px 0 0; padding-top: 8px; padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+.sheet .wrap { max-width: 640px; }
+.grab { width: 40px; height: 4px; border-radius: 2px; background: var(--line); margin: 0 auto 10px; }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; }
+.sheet-head h3 { margin: 0; font: 700 24px var(--display); }
+.prow { padding: 10px 12px; display: grid; gap: 8px; }
+.prow + .prow { margin-top: 6px; }
+.prow.neg { border-color: var(--good); }
+.prow-top { display: flex; align-items: center; gap: 10px; }
+.prow .name { flex: 1; min-width: 0; font-weight: 600; }
+.prow .name::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--pc); margin-right: 8px; }
+.prow .runtot { display: block; font-size: 12px; font-weight: 500; color: var(--muted); }
+.sign { flex: none; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); font: 700 24px/1 var(--display); color: var(--muted); }
+.sign[aria-pressed="true"] { background: var(--good); border-color: var(--good); color: var(--felt-fg); }
+.prow input { width: 110px; text-align: right; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: var(--surface-2); font: 700 22px var(--display); }
+.opts { display: flex; gap: 6px; flex-wrap: wrap; }
+.opt { border: 1px solid var(--line); background: var(--surface-2); border-radius: 7px; padding: 4px 9px; font-size: 12px; font-weight: 600; }
+.confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--bad); margin-top: 10px; }
+.confirm p { margin: 0; flex: 1 1 180px; }
+.toast { position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-weight: 600; z-index: 30; box-shadow: 0 6px 20px rgba(0,0,0,.25); max-width: calc(100vw - 32px); }
+.offline { background: var(--bad); color: #fff; text-align: center; font-size: 12px; padding: 4px; }
+@media (prefers-reduced-motion: reduce) { .ticket.fresh { animation: none; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap gut">
+    <div class="brand"><span class="tile" aria-hidden="true">1</span><div><b>Masa101</b><small>Skor · Sipariş · Adisyon</small></div></div>
+    <nav class="views" aria-label="Ekran">
+      <a href="#masa" data-v="masa">Masa</a>
+      <a href="#tezgah" data-v="tezgah">Tezgâh<span class="badge" id="bTez" hidden></span></a>
+      <a href="#salon" data-v="salon">Salon</a>
+    </nav>
+  </div>
+</header>
+<div class="demo-strip"><div class="wrap gut"><span>Demo · Menü ve diğer masalar örnek. Bir cihazı masa, diğerini tezgâh yapın.</span><button id="resetBtn">Demoyu sıfırla</button></div></div>
+<div class="offline" id="offline" hidden>Bağlantı yok, tekrar deneniyor…</div>
+<main class="gut"><div class="wrap" id="app"></div></main>
+<div id="bottom"></div>
+<div id="layer"></div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+(() => {
+const ROOM = (new URLSearchParams(location.search).get("k") || "demo");
+const API = "/api/state?k=" + encodeURIComponent(ROOM);
+const COLORS = ["c0", "c1", "c2", "c3"];
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = n => (n < 0 ? "−" : "") + Math.abs(n);
+const tl = n => n.toLocaleString("tr-TR") + " ₺";
+const ls = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+};
+
+let S = null;                       // shared state from the server
+let view = "masa";
+let tableNo = ls.get("m101.table", 4);
+let tab = "skor";
+let cat = null;
+let cart = {};
+let payMode = "loser";
+let seenOrders = null;
+let soundOn = false;
+let draft = null;
+
+/* ---------- server ---------- */
+async function pull() {
+  try {
+    const r = await fetch(API, { cache: "no-store" });
+    if (!r.ok) throw 0;
+    setState(await r.json());
+    $("#offline").hidden = true;
+  } catch (e) { $("#offline").hidden = false; }
+}
+async function act(a) {
+  try {
+    const r = await fetch(API, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(a) });
+    if (!r.ok) throw 0;
+    setState(await r.json());
+    $("#offline").hidden = true;
+    return true;
+  } catch (e) { $("#offline").hidden = false; toast("Gönderilemedi, bağlantıyı kontrol edin"); return false; }
+}
+function setState(ns) {
+  const prev = S;
+  S = ns;
+  const fresh = S.orders.filter(o => o.status === "new" && !o.paid);
+  if (seenOrders && fresh.some(o => !seenOrders.has(o.id))) { if (view === "tezgah") beep(); }
+  seenOrders = new Set(S.orders.map(o => o.id));
+  if (!prev || prev.v !== S.v) render(false);
+  else updateBadges();
+}
+const menuItem = id => S.menu.find(m => m.id === id) || { n: id, p: 0 };
+const orderTotal = o => o.items.reduce((a, x) => a + menuItem(x.id).p * x.q, 0);
+const tableOrders = t => S.orders.filter(o => o.table === t && !o.paid);
+const tableBill = t => tableOrders(t).reduce((a, o) => a + orderTotal(o), 0);
+const ago = t => { const m = Math.max(0, Math.round(((S.now || Date.now()) - t) / 60000)); return m < 1 ? "şimdi" : m + " dk önce"; };
+
+/* ---------- local game per table ---------- */
+const gameKey = () => "m101.game." + ROOM + "." + tableNo;
+const getGame = () => ls.get(gameKey(), null);
+function setGame(g) { ls.set(gameKey(), g); pushGame(g); }
+function totals(g) { const t = g.players.map(() => 0); g.hands.forEach(h => h.forEach((v, i) => t[i] += v)); return t; }
+function sides(g) {
+  const t = totals(g);
+  if (g.mode === "team") return [[0, 2], [1, 3]].map((tm, k) => ({ name: g.teamNames[k], members: tm.map(i => g.players[i]), total: tm[0] != null ? t[tm[0]] + t[tm[1]] : 0, color: COLORS[k], sub: tm.map(i => g.players[i] + " " + fmt(t[i])).join(" · ") }));
+  return g.players.map((n, i) => ({ name: n, members: [n], total: t[i], color: COLORS[i], sub: "" }));
+}
+function pushGame(g) {
+  act({ type: "game", table: tableNo, game: g && g.hands.length ? { mode: g.mode, hands: g.hands.length, sides: sides(g).map(s => ({ name: s.name, total: s.total })) } : null });
+}
+
+/* ---------- render ---------- */
+function render(scrollTop) {
+  view = (location.hash.slice(1) || "masa");
+  if (!["masa", "tezgah", "salon"].includes(view)) view = "masa";
+  document.querySelectorAll(".views a").forEach(a => a.setAttribute("aria-current", a.dataset.v === view ? "page" : "false"));
+  updateBadges();
+  if (!S) { $("#app").innerHTML = `<div class="empty">Yükleniyor…</div>`; return; }
+  const focusId = document.activeElement && document.activeElement.id;
+  if (view === "masa") renderMasa(); else if (view === "tezgah") renderTezgah(); else renderSalon();
+  if (focusId && !$("#layer").innerHTML) { const el = document.getElementById(focusId); if (el && el.tagName === "INPUT") el.focus(); }
+  if (scrollTop) window.scrollTo(0, 0);
+}
+function updateBadges() {
+  if (!S) return;
+  const n = S.orders.filter(o => o.status === "new" && !o.paid).length + S.calls.length;
+  const b = $("#bTez"); b.hidden = !n; b.textContent = n;
+}
+
+/* ===== MASA ===== */
+function renderMasa() {
+  const g = getGame();
+  const myOrders = tableOrders(tableNo);
+  const bill = tableBill(tableNo);
+  const opts = Array.from({ length: S.tables }, (_, i) => `<option value="${i + 1}" ${i + 1 === tableNo ? "selected" : ""}>Masa ${i + 1}</option>`).join("");
+  $("#app").innerHTML = `
+    <div class="table-head">
+      <h1>Masa ${tableNo}</h1>
+      <label class="hint" style="margin:0">Bu cihaz: <select id="tableSel" aria-label="Masa seç">${opts}</select></label>
+    </div>
+    <div class="tabs" role="tablist">
+      <button data-tab="skor" aria-pressed="${tab === "skor"}">Skor${g && g.hands.length ? `<span class="cnt">${g.hands.length}. el</span>` : ""}</button>
+      <button data-tab="siparis" aria-pressed="${tab === "siparis"}">Sipariş</button>
+      <button data-tab="hesap" aria-pressed="${tab === "hesap"}">Hesap${bill ? `<span class="cnt">${tl(bill)}</span>` : ""}</button>
+    </div>
+    <div id="tabBody"></div>`;
+  $("#tableSel").onchange = e => { tableNo = +e.target.value; ls.set("m101.table", tableNo); cart = {}; render(true); };
+  document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { tab = b.dataset.tab; render(false); });
+  if (tab === "skor") renderSkor(g); else if (tab === "siparis") renderSiparis(myOrders); else renderHesap(g, myOrders, bill);
+  renderMasaBottom();
+}
+
+function renderMasaBottom() {
+  const callG = S.calls.some(c => c.table === tableNo && c.kind === "garson");
+  const callH = S.calls.some(c => c.table === tableNo && c.kind === "hesap");
+  const items = Object.entries(cart).filter(([, q]) => q > 0);
+  const cartQ = items.reduce((a, [, q]) => a + q, 0);
+  const cartT = items.reduce((a, [id, q]) => a + menuItem(id).p * q, 0);
+  let html;
+  if (tab === "skor") {
+    const g = getGame();
+    html = g ? `<button class="primary wide" id="addHand">+ ${g.hands.length + 1}. eli yaz</button>` : "";
+  } else if (tab === "siparis" && cartQ) {
+    html = `<button class="primary wide" id="sendOrder"><span class="cartbar"><span>${cartQ} ürün · ${tl(cartT)}</span><span>Siparişi gönder →</span></span></button>`;
+  } else {
+    html = `<button class="ghost ${callG ? "on" : ""}" id="callG">${callG ? "Garson geliyor…" : "Garson çağır"}</button>
+            <button class="ghost ${callH ? "on" : ""}" id="callH">${callH ? "Hesap istendi" : "Hesap iste"}</button>`;
+  }
+  $("#bottom").innerHTML = html ? `<div class="bottombar"><div class="wrap gut">${html}</div></div>` : "";
+  const ah = $("#addHand"); if (ah) ah.onclick = () => openHand(null);
+  const so = $("#sendOrder"); if (so) so.onclick = async () => {
+    so.disabled = true;
+    const ok = await act({ type: "order", table: tableNo, items: items.map(([id, q]) => ({ id, q })) });
+    if (ok) { cart = {}; toast("Sipariş tezgâha gitti"); render(false); } else so.disabled = false;
+  };
+  const cg = $("#callG"); if (cg) cg.onclick = () => { if (!callG) act({ type: "call", table: tableNo, kind: "garson" }).then(ok => ok && toast("Garson çağrıldı")); };
+  const ch = $("#callH"); if (ch) ch.onclick = () => { if (!callH) act({ type: "call", table: tableNo, kind: "hesap" }).then(ok => ok && toast("Hesap istendi")); };
+}
+
+/* --- skor --- */
+function renderSkor(g) {
+  if (!g) {
+    const st = ls.get("m101.setup", { mode: "team", names: ["", "", "", ""], teamNames: ["Kırmızılar", "Maviler"], count: 4 });
+    const field = (i, c) => `<label class="field card ${c}"><span class="dot"></span><input id="n${i}" value="${esc(st.names[i])}" placeholder="Oyuncu ${i + 1}" maxlength="16" autocomplete="off"></label>`;
+    const players = st.mode === "team"
+      ? `<div class="setup-grid">${[0, 1].map(k => `<div class="${COLORS[k]}"><p class="team-lbl"><input id="tn${k}" value="${esc(st.teamNames[k])}" maxlength="16" aria-label="Takım adı" style="border:0;background:transparent;font:inherit;color:inherit;outline:none;width:100%"></p>${field(k, COLORS[k])}${field(k + 2, COLORS[k])}</div>`).join("")}</div>`
+      : `<div class="seg" id="cntSeg" style="margin-bottom:10px">${[2, 3, 4].map(c => `<button data-c="${c}" aria-pressed="${st.count === c}">${c} kişi</button>`).join("")}</div>
+         <div class="setup-grid">${Array.from({ length: st.count }, (_, i) => field(i, COLORS[i])).join("")}</div>`;
+    $("#tabBody").innerHTML = `
+      <h2>Yeni oyun</h2>
+      <div class="seg" id="modeSeg"><button data-m="team" aria-pressed="${st.mode === "team"}">Eşli</button><button data-m="single" aria-pressed="${st.mode === "single"}">Tekli</button></div>
+      <h2>${st.mode === "team" ? "Takımlar" : "Oyuncular"}</h2>
+      ${players}
+      <div style="margin-top:18px"><button class="primary" id="startGame" style="width:100%">Oyunu başlat</button></div>
+      <p class="hint">Oyun bitince kaybeden taraf masanın hesabını öder.</p>`;
+    const read = () => {
+      const s = ls.get("m101.setup", st);
+      for (let i = 0; i < 4; i++) { const el = $("#n" + i); if (el) s.names[i] = el.value.trim(); }
+      [0, 1].forEach(k => { const el = $("#tn" + k); if (el) s.teamNames[k] = el.value.trim() || s.teamNames[k]; });
+      ls.set("m101.setup", s); return s;
+    };
+    document.querySelectorAll("#tabBody input").forEach(el => el.oninput = read);
+    $("#modeSeg").onclick = e => { const b = e.target.closest("button"); if (!b) return; const s = read(); s.mode = b.dataset.m; ls.set("m101.setup", s); render(false); };
+    const cs = $("#cntSeg"); if (cs) cs.onclick = e => { const b = e.target.closest("button"); if (!b) return; const s = read(); s.count = +b.dataset.c; ls.set("m101.setup", s); render(false); };
+    $("#startGame").onclick = () => {
+      const s = read(); const n = s.mode === "team" ? 4 : s.count;
+      setGame({ mode: s.mode, players: Array.from({ length: n }, (_, i) => s.names[i] || "Oyuncu " + (i + 1)), teamNames: [...s.teamNames], hands: [] });
+      render(false);
+    };
+    return;
+  }
+  const sd = sides(g).sort((a, b) => a.total - b.total);
+  const has = g.hands.length > 0;
+  const best = sd[0].total, worst = sd[sd.length - 1].total;
+  const stand = sd.map((s, r) => `<div class="card stand ${s.color} ${has && s.total === best ? "lead" : ""}">
+      <span class="tile">${r + 1}</span>
+      <div style="min-width:0"><b>${esc(s.name)}${has && s.total === best ? `<span class="pill">Önde</span>` : ""}${has && s.total === worst && sd.length > 1 ? `<span class="pill pay">Öder</span>` : ""}</b>${s.sub ? `<small>${esc(s.sub)}</small>` : ""}</div>
+      <span class="total">${fmt(s.total)}</span></div>`).join("");
+  const t = totals(g);
+  let head, rows, foot;
+  if (g.mode === "team") {
+    const T = [[0, 2], [1, 3]];
+    head = `<th class="n">El</th>` + T.map((tm, k) => `<th>${esc(g.teamNames[k])}</th>`).join("");
+    rows = g.hands.map((h, hi) => `<tr data-h="${hi}"><td class="n">${hi + 1}</td>${T.map(tm => `<td class="${tm.some(i => h[i] < 0) ? "fin" : ""}">${fmt(h[tm[0]] + h[tm[1]])}<small>${tm.map(i => fmt(h[i])).join(" · ")}</small></td>`).join("")}</tr>`).join("");
+    foot = `<td class="n">Σ</td>` + T.map(tm => `<td>${fmt(t[tm[0]] + t[tm[1]])}</td>`).join("");
+  } else {
+    head = `<th class="n">El</th>` + g.players.map(p => `<th>${esc(p)}</th>`).join("");
+    rows = g.hands.map((h, hi) => `<tr data-h="${hi}"><td class="n">${hi + 1}</td>${h.map(v => `<td class="${v < 0 ? "fin" : ""}">${fmt(v)}</td>`).join("")}</tr>`).join("");
+    foot = `<td class="n">Σ</td>` + t.map(v => `<td>${fmt(v)}</td>`).join("");
+  }
+  $("#tabBody").innerHTML = `
+    <h2>Durum</h2>${stand}
+    <h2>Eller</h2>
+    <div class="card ledger">${has ? `<table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody><tfoot><tr>${foot}</tr></tfoot></table>` : `<div class="empty">El bitince aşağıdan puanları yazın.</div>`}</div>
+    ${has ? `<p class="hint">Düzeltmek için ele dokunun.</p>` : ""}
+    <div style="margin-top:14px"><button class="ghost" id="endGame">Oyunu sıfırla</button><div id="endBox"></div></div>`;
+  document.querySelectorAll("tbody tr").forEach(tr => tr.onclick = () => openHand(+tr.dataset.h));
+  $("#endGame").onclick = () => {
+    $("#endBox").innerHTML = `<div class="confirm"><p>Skorlar silinsin mi? Hesap etkilenmez.</p><button class="ghost" id="eNo">Vazgeç</button><button class="ghost danger" id="eYes">Sil</button></div>`;
+    $("#eNo").onclick = () => $("#endBox").innerHTML = "";
+    $("#eYes").onclick = () => { ls.set(gameKey(), null); pushGame(null); render(false); };
+  };
+}
+
+function openHand(idx) {
+  const g = getGame();
+  draft = { idx, v: idx == null ? g.players.map(() => "") : g.hands[idx].map(String), fresh: true };
+  drawHand();
+  draft.fresh = false;
+  const first = [...document.querySelectorAll(".sheet input")].find(x => x.value === "") || $(".sheet input");
+  if (first) first.focus();
+}
+const parse = s => { const n = parseInt(String(s).replace(/[^0-9-]/g, "")); return isNaN(n) ? 0 : n; };
+function drawHand() {
+  const g = getGame();
+  const order = g.mode === "team" ? [0, 2, 1, 3] : g.players.map((_, i) => i);
+  const before = g.players.map(() => 0);
+  g.hands.slice(0, draft.idx == null ? g.hands.length : draft.idx).forEach(h => h.forEach((v, i) => before[i] += v));
+  const col = i => g.mode === "team" ? COLORS[i % 2] : COLORS[i];
+  const no = draft.idx == null ? g.hands.length + 1 : draft.idx + 1;
+  $("#layer").innerHTML = `<div class="scrim" id="scrim"></div>
+    <div class="sheet" role="dialog" aria-label="El girişi"><div class="wrap gut">
+      <div class="grab"></div>
+      <div class="sheet-head"><h3>${no}. el</h3><button class="ghost" id="hClose">Kapat</button></div>
+      <p class="hint">Puanı yazın, Enter ile sıradakine geçin. Biten için önce − tuşu.</p>
+      <div style="margin-top:10px">${order.map((i, k) => {
+        const v = String(draft.v[i]); const neg = v.startsWith("-");
+        return `<div class="card prow ${col(i)} ${neg ? "neg" : ""}" id="row${i}">
+          <div class="prow-top">
+            <span class="name">${esc(g.players[i])}<span class="runtot" id="rt${i}">Toplam ${fmt(before[i] + parse(v))}</span></span>
+            <button class="sign" data-sign="${i}" aria-pressed="${neg}" aria-label="Eksi">−</button>
+            <input id="hv${i}" data-i="${i}" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="${k === order.length - 1 ? "done" : "next"}" placeholder="0" value="${esc(v.replace("-", ""))}">
+          </div>
+          <div class="opts">
+            <button class="opt" data-q="${i}" data-val="-101">−101</button><button class="opt" data-q="${i}" data-val="-202">−202</button>
+            <button class="opt" data-q="${i}" data-val="202">202</button><button class="opt" data-add="${i}">+101 ceza</button>
+          </div></div>`;
+      }).join("")}</div>
+      <div id="hConfirm"></div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:8px;margin-top:14px">
+        ${draft.idx != null ? `<button class="ghost danger" id="hDel">Sil</button>` : `<span></span>`}
+        <button class="primary" id="hSave">Eli kaydet</button>
+      </div>
+    </div></div>`;
+  const update = i => {
+    const neg = $(`[data-sign="${i}"]`).getAttribute("aria-pressed") === "true";
+    const d = $("#hv" + i).value.replace(/[^0-9]/g, "");
+    draft.v[i] = d === "" ? "" : (neg ? "-" : "") + d;
+    $("#rt" + i).textContent = "Toplam " + fmt(before[i] + parse(draft.v[i]));
+    $("#row" + i).classList.toggle("neg", neg && d !== "");
+  };
+  const inputs = order.map(i => $("#hv" + i));
+  inputs.forEach((inp, k) => {
+    inp.onfocus = () => inp.select();
+    inp.oninput = () => { if (inp.value.includes("-")) $(`[data-sign="${inp.dataset.i}"]`).setAttribute("aria-pressed", "true"); inp.value = inp.value.replace(/[^0-9]/g, ""); update(+inp.dataset.i); };
+    inp.onkeydown = e => { if (e.key !== "Enter") return; e.preventDefault(); if (k < inputs.length - 1) inputs[k + 1].focus(); else $("#hSave").click(); };
+  });
+  document.querySelectorAll("[data-sign]").forEach(b => b.onclick = () => { b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") !== "true"); update(+b.dataset.sign); $("#hv" + b.dataset.sign).focus(); });
+  const setVal = (i, val) => {
+    const n = parse(val); $("#hv" + i).value = Math.abs(n) || ""; $(`[data-sign="${i}"]`).setAttribute("aria-pressed", n < 0); update(i);
+    const k = order.indexOf(i); if (k < order.length - 1) inputs[k + 1].focus();
+  };
+  document.querySelectorAll("[data-q]").forEach(b => b.onclick = () => setVal(+b.dataset.q, b.dataset.val));
+  document.querySelectorAll("[data-add]").forEach(b => b.onclick = () => { const i = +b.dataset.add; setVal(i, String(parse(draft.v[i]) + 101)); });
+  $("#scrim").onclick = $("#hClose").onclick = closeLayer;
+  const del = $("#hDel"); if (del) del.onclick = () => {
+    $("#hConfirm").innerHTML = `<div class="confirm"><p>${no}. el silinsin mi?</p><button class="ghost" id="dNo">Vazgeç</button><button class="ghost danger" id="dYes">Sil</button></div>`;
+    $("#dNo").onclick = () => $("#hConfirm").innerHTML = "";
+    $("#dYes").onclick = () => { g.hands.splice(draft.idx, 1); setGame(g); closeLayer(); render(false); };
+  };
+  $("#hSave").onclick = () => {
+    const h = draft.v.map(parse);
+    if (draft.idx == null) g.hands.push(h); else g.hands[draft.idx] = h;
+    setGame(g); closeLayer(); render(false);
+  };
+}
+function closeLayer() { $("#layer").innerHTML = ""; draft = null; }
+
+/* --- sipariş --- */
+function renderSiparis(myOrders) {
+  const cats = [...new Set(S.menu.map(m => m.c))];
+  if (!cat || !cats.includes(cat)) cat = cats[0];
+  const items = S.menu.filter(m => m.c === cat);
+  const st = { new: ["Alındı", "st-new"], prep: ["Hazırlanıyor", "st-prep"], done: ["Geldi", "st-done"] };
+  $("#tabBody").innerHTML = `
+    <h2>Menü</h2>
+    <div class="cats">${cats.map(c => `<button class="chip" data-cat="${esc(c)}" aria-pressed="${c === cat}">${esc(c)}</button>`).join("")}</div>
+    <div class="menu">${items.map(m => {
+      const q = cart[m.id] || 0;
+      return `<div class="card item ${q ? "in" : ""}"><b>${esc(m.n)}</b><div class="row"><span class="price">${tl(m.p)}</span>
+        ${q ? `<span class="qty"><button data-dec="${m.id}" aria-label="Azalt">−</button><span>${q}</span><button data-inc="${m.id}" aria-label="Artır">+</button></span>` : `<button class="add" data-inc="${m.id}">Ekle</button>`}
+      </div></div>`;
+    }).join("")}</div>
+    ${myOrders.length ? `<h2>Siparişleriniz</h2><div class="my-orders">${myOrders.slice().reverse().map(o => `
+      <div class="card ord-line"><div class="what">${o.items.map(x => `${x.q}× ${esc(menuItem(x.id).n)}`).join(", ")}<small>${ago(o.t)} · ${tl(orderTotal(o))}</small></div>
+      <span class="status ${st[o.status][1]}">${st[o.status][0]}</span></div>`).join("")}</div>` : ""}`;
+  document.querySelectorAll("[data-cat]").forEach(b => b.onclick = () => { cat = b.dataset.cat; render(false); });
+  document.querySelectorAll("[data-inc]").forEach(b => b.onclick = () => { cart[b.dataset.inc] = (cart[b.dataset.inc] || 0) + 1; render(false); });
+  document.querySelectorAll("[data-dec]").forEach(b => b.onclick = () => { cart[b.dataset.dec] = Math.max(0, (cart[b.dataset.dec] || 0) - 1); render(false); });
+}
+
+/* --- hesap --- */
+function billLines(orders) {
+  const m = {};
+  orders.forEach(o => o.items.forEach(x => { m[x.id] = (m[x.id] || 0) + x.q; }));
+  return Object.entries(m).map(([id, q]) => ({ n: menuItem(id).n, q, sum: menuItem(id).p * q }));
+}
+function payerBlock(game, bill, mode) {
+  if (!game || !game.hands || !game.sides || game.sides.length < 2) return "";
+  const sd = game.sides.slice().sort((a, b) => b.total - a.total);
+  const loser = sd[0];
+  const membersOf = s => s.members || [s.name];
+  const people = game.sides.flatMap(membersOf);
+  const lm = membersOf(loser);
+  return `<div class="card payer">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+      <span class="hint" style="margin:0">${game.hands}. el sonunda</span>
+      <div class="seg" id="payMode"><button data-p="loser" aria-pressed="${mode === "loser"}">Kaybeden öder</button><button data-p="split" aria-pressed="${mode === "split"}">Eşit böl</button></div>
+    </div>
+    ${mode === "loser"
+      ? `<div class="big">${esc(loser.name)} öder: ${tl(bill)}</div>
+         ${lm.length > 1 ? `<div class="split">${lm.map(n => `<div><span>${esc(n)}</span><span class="money">${tl(Math.round(bill / lm.length))}</span></div>`).join("")}</div>` : ""}`
+      : `<div class="split">${people.map(n => `<div><span>${esc(n)}</span><span class="money">${tl(Math.round(bill / people.length))}</span></div>`).join("")}</div>`}
+  </div>`;
+}
+function renderHesap(g, myOrders, bill) {
+  const lines = billLines(myOrders);
+  const game = g && g.hands.length ? { hands: g.hands.length, sides: sides(g) } : null;
+  $("#tabBody").innerHTML = `
+    <h2>Adisyon</h2>
+    <div class="card">
+      ${lines.length ? `<div class="bill-lines">${lines.map(l => `<div class="bill-line"><span>${l.q}× ${esc(l.n)}</span><span class="money">${tl(l.sum)}</span></div>`).join("")}</div>` : `<div class="empty">Henüz sipariş yok.</div>`}
+      <div class="bill-total"><span>Toplam</span><span class="money">${tl(bill)}</span></div>
+    </div>
+    ${bill ? payerBlock(game, bill, payMode) : ""}
+    ${bill ? `<div style="margin-top:14px"><button class="ghost" id="closeBill">Hesabı kapat</button><div id="closeBox"></div></div>` : ""}`;
+  const pm = $("#payMode"); if (pm) pm.onclick = e => { const b = e.target.closest("button"); if (!b) return; payMode = b.dataset.p; render(false); };
+  const cb = $("#closeBill"); if (cb) cb.onclick = () => confirmClose(tableNo, "#closeBox", true);
+}
+function confirmClose(t, boxSel, resetLocal) {
+  $(boxSel).innerHTML = `<div class="confirm"><p>Masa ${t} hesabı ödendi olarak kapansın mı? Oyun da sıfırlanır.</p><button class="ghost" id="cNo">Vazgeç</button><button class="ghost danger" id="cYes">Kapat</button></div>`;
+  $("#cNo").onclick = () => $(boxSel).innerHTML = "";
+  $("#cYes").onclick = async () => {
+    if (await act({ type: "close", table: t })) {
+      if (resetLocal) ls.set(gameKey(), null);
+      closeLayer(); toast(`Masa ${t} hesabı kapandı`); render(false);
+    }
+  };
+}
+
+/* ===== TEZGÂH ===== */
+function renderTezgah() {
+  $("#bottom").innerHTML = "";
+  const open = S.orders.filter(o => !o.paid);
+  const cols = [
+    ["new", "Yeni", "Hazırlamaya başla", "prep"],
+    ["prep", "Hazırlanıyor", "Teslim edildi", "done"],
+    ["done", "Teslim edildi", null, null],
+  ];
+  const fresh = new Set(open.filter(o => o.status === "new" && Date.now() - o.t < 15000).map(o => o.id));
+  $("#app").innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+      <h2 style="margin:0">Tezgâh</h2>
+      <button class="ghost" id="soundBtn">${soundOn ? "Ses açık" : "Sesi aç"}</button>
+    </div>
+    ${S.calls.length ? `<div class="calls">${S.calls.map(c => `<div class="card call"><span><b>Masa ${c.table}</b> ${c.kind === "hesap" ? "hesap istiyor" : "garson çağırıyor"} <small class="hint">${ago(c.t)}</small></span><button class="ghost" data-call="${c.id}">Tamam</button></div>`).join("")}</div>` : ""}
+    <div class="board">${cols.map(([st, title, next, nst]) => {
+      const list = open.filter(o => o.status === st).sort((a, b) => st === "done" ? b.t - a.t : a.t - b.t).slice(0, st === "done" ? 6 : 50);
+      return `<section class="col"><h2><span>${title}</span><span>${open.filter(o => o.status === st).length}</span></h2><div class="col-list">
+        ${list.length ? list.map(o => `<div class="card ticket ${fresh.has(o.id) ? "fresh" : ""}">
+          <div class="th"><b>Masa ${o.table}</b><small>${ago(o.t)}</small></div>
+          <ul>${o.items.map(x => `<li><span class="q">${x.q}×</span>${esc(menuItem(x.id).n)}</li>`).join("")}</ul>
+          ${next ? `<button class="${st === "new" ? "primary" : "ghost"}" data-o="${o.id}" data-s="${nst}">${next}</button>` : ""}
+        </div>`).join("") : `<div class="card empty">Boş</div>`}
+      </div></section>`;
+    }).join("")}</div>`;
+  document.querySelectorAll("[data-o]").forEach(b => b.onclick = () => act({ type: "status", id: b.dataset.o, status: b.dataset.s }));
+  document.querySelectorAll("[data-call]").forEach(b => b.onclick = () => act({ type: "callDone", id: b.dataset.call }));
+  $("#soundBtn").onclick = () => { soundOn = !soundOn; if (soundOn) beep(); render(false); };
+}
+let actx = null;
+function beep() {
+  if (!soundOn) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    [0, 0.18].forEach((d, k) => {
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.frequency.value = k ? 1046 : 784; o.connect(g); g.connect(actx.destination);
+      g.gain.setValueAtTime(0.0001, actx.currentTime + d); g.gain.exponentialRampToValueAtTime(0.25, actx.currentTime + d + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + d + 0.16);
+      o.start(actx.currentTime + d); o.stop(actx.currentTime + d + 0.18);
+    });
+  } catch (e) {}
+}
+
+/* ===== SALON ===== */
+function renderSalon() {
+  $("#bottom").innerHTML = "";
+  const open = S.orders.filter(o => !o.paid);
+  const totalOpen = open.reduce((a, o) => a + orderTotal(o), 0);
+  const busy = new Set([...open.map(o => o.table), ...Object.keys(S.games).map(Number)]);
+  const today = S.orders.filter(o => o.paid).reduce((a, o) => a + orderTotal(o), 0);
+  $("#app").innerHTML = `
+    <div class="summary">
+      <div class="card"><small>Açık hesaplar</small><span class="money">${tl(totalOpen)}</span></div>
+      <div class="card"><small>Dolu masa</small><span class="money">${busy.size} / ${S.tables}</span></div>
+      <div class="card"><small>Kapanan hesaplar</small><span class="money">${tl(today)}</span></div>
+      <div class="card"><small>Bekleyen sipariş</small><span class="money">${open.filter(o => o.status !== "done").length}</span></div>
+    </div>
+    <div class="salon">${Array.from({ length: S.tables }, (_, k) => {
+      const t = k + 1; const bill = tableBill(t); const gm = S.games[t];
+      const calls = S.calls.filter(c => c.table === t);
+      let game = "";
+      if (gm && gm.sides && gm.sides.length > 1) {
+        const sd = gm.sides.slice().sort((a, b) => a.total - b.total);
+        game = `<small>${gm.mode === "team" ? "Eşli" : "Tekli"} · ${gm.hands}. el · Önde ${esc(sd[0].name)}</small><small>Öder: <b>${esc(sd[sd.length - 1].name)}</b></small>`;
+      }
+      return `<button class="card tcard ${busy.has(t) || calls.length ? "" : "idle"}" data-t="${t}">
+        <div class="th"><b>Masa ${t}</b><span class="tags">${calls.map(c => `<span class="status st-prep">${c.kind === "hesap" ? "Hesap" : "Garson"}</span>`).join("")}</span></div>
+        <span class="money">${bill ? tl(bill) : "Boş"}</span>${game}
+      </button>`;
+    }).join("")}</div>`;
+  document.querySelectorAll("[data-t]").forEach(b => b.onclick = () => openTable(+b.dataset.t));
+}
+function openTable(t) {
+  const lines = billLines(tableOrders(t)); const bill = tableBill(t); const gm = S.games[t];
+  $("#layer").innerHTML = `<div class="scrim" id="scrim"></div>
+    <div class="sheet" role="dialog" aria-label="Masa ${t}"><div class="wrap gut">
+      <div class="grab"></div>
+      <div class="sheet-head"><h3>Masa ${t}</h3><button class="ghost" id="tClose">Kapat</button></div>
+      <h2>Adisyon</h2>
+      <div class="card">${lines.length ? `<div class="bill-lines">${lines.map(l => `<div class="bill-line"><span>${l.q}× ${esc(l.n)}</span><span class="money">${tl(l.sum)}</span></div>`).join("")}</div>` : `<div class="empty">Sipariş yok.</div>`}
+        <div class="bill-total"><span>Toplam</span><span class="money">${tl(bill)}</span></div></div>
+      ${bill && gm ? payerBlock(gm, bill, "loser") : ""}
+      ${bill || gm ? `<div style="margin-top:14px"><button class="primary" id="tPay" style="width:100%">Ödendi, masayı kapat</button><div id="tBox"></div></div>` : ""}
+    </div></div>`;
+  $("#scrim").onclick = $("#tClose").onclick = closeLayer;
+  const pm = $("#payMode"); if (pm) pm.hidden = true;
+  const tp = $("#tPay"); if (tp) tp.onclick = () => confirmClose(t, "#tBox", t === tableNo);
+}
+
+/* ---------- misc ---------- */
+let toastT;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2200); }
+$("#resetBtn").onclick = () => {
+  const b = $("#resetBtn");
+  if (b.dataset.armed) { act({ type: "reset" }); ls.set(gameKey(), null); delete b.dataset.armed; b.textContent = "Demoyu sıfırla"; toast("Demo sıfırlandı"); }
+  else { b.dataset.armed = "1"; b.textContent = "Emin misiniz? Tekrar dokunun"; setTimeout(() => { delete b.dataset.armed; b.textContent = "Demoyu sıfırla"; }, 3000); }
+};
+window.addEventListener("hashchange", () => { closeLayer(); render(true); });
+render(false);
+pull();
+setInterval(() => { if (!document.hidden && !draft) pull(); }, 2500);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) pull(); });
+})();
+</script>
+</body>
+</html>
