@@ -100,7 +100,8 @@ h2 { font: 600 13px/1 var(--body); text-transform: uppercase; letter-spacing: .0
 .team-box { border: 1px solid var(--line); border-radius: 14px; padding: 12px; background: var(--surface-2); }
 .team-box + .team-box { margin-top: 10px; }
 .team-box .lbl { font: 700 16px var(--display); letter-spacing: .03em; margin-bottom: 8px; color: var(--pc); }
-.rules { display: grid; gap: 8px; }
+.rules { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.rules > * { min-width: 0; }
 .rule { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
 .rule span { min-width: 0; }
 .rule small { display: block; color: var(--muted); font-size: 12px; }
@@ -196,6 +197,17 @@ tfoot td { font-size: 22px; background: var(--surface-2); border-bottom: 0; }
 .confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--bad); margin-top: 10px; }
 .confirm p { margin: 0; flex: 1 1 180px; }
 .menu-list { display: grid; gap: 8px; }
+.type-row { gap: 8px; }
+.type-row .tname { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; background: var(--surface-2); font-size: 16px; }
+.type-row input[type="number"] { width: 64px; }
+.type-row .xm { color: var(--muted); font-weight: 600; }
+.tdel { border: 0; background: transparent; color: var(--bad); font-weight: 600; font-size: 13px; padding: 6px 2px; }
+.tdel:disabled { opacity: .3; }
+.preset { display: inline-flex; align-items: center; }
+.preset .chip { border-radius: 99px 0 0 99px; }
+.pdel { border: 1px solid var(--line); border-left: 0; background: var(--surface); border-radius: 0 99px 99px 0; padding: 8px 10px; color: var(--muted); font-weight: 700; font-size: 14px; }
+.save-preset { display: flex; gap: 8px; margin-top: 10px; }
+.save-preset input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: var(--surface); font-size: 16px; }
 .menu-list button { text-align: left; }
 .hist { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; }
 .hist small { color: var(--muted); display: block; font-weight: 400; }
@@ -222,11 +234,23 @@ tfoot td { font-size: 22px; background: var(--surface-2); border-bottom: 0; }
 (() => {
 const KEY = "okey101.v1";
 const COLORS = ["c0", "c1", "c2", "c3"];
-const MULTS = [
-  { m: 1, label: "Normal" },
-  { m: 2, label: "Okeyle / Çifte ×2" },
-  { m: 4, label: "Elden ×4" },
-];
+const DEFAULT_RULES = {
+  finish: 101, notOpened: 202, penalty: 101, hands: 0, partnerZero: false,
+  dbl: 2, multFinisher: true, multNotOpened: true, multPenalty: false,
+  types: [
+    { id: "t1", n: "Normal", m: 1 },
+    { id: "t2", n: "Okeyle", m: 2 },
+    { id: "t3", n: "Çifte giderek", m: 2 },
+    { id: "t4", n: "Elden", m: 4 },
+  ],
+};
+const clone = o => JSON.parse(JSON.stringify(o));
+const normRules = r => {
+  const out = { ...clone(DEFAULT_RULES), ...(r || {}) };
+  if (!Array.isArray(out.types) || !out.types.length) out.types = clone(DEFAULT_RULES.types);
+  return out;
+};
+const newId = () => "t" + Math.random().toString(36).slice(2, 8);
 
 let store = load();
 let draft = null; // hand being edited
@@ -234,9 +258,15 @@ let draft = null; // hand being edited
 function load() {
   try {
     const s = JSON.parse(localStorage.getItem(KEY));
-    if (s && typeof s === "object") return { game: s.game || null, history: s.history || [], setup: s.setup || null };
+    if (s && typeof s === "object") {
+      const st = { game: s.game || null, history: s.history || [], setup: s.setup || null, presets: s.presets || [] };
+      if (st.game) st.game.rules = normRules(st.game.rules);
+      st.history.forEach(g => g.rules = normRules(g.rules));
+      if (st.setup) st.setup.rules = normRules(st.setup.rules);
+      return st;
+    }
   } catch (e) {}
-  return { game: null, history: [], setup: null };
+  return { game: null, history: [], setup: null, presets: [] };
 }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -246,15 +276,73 @@ const $ = s => document.querySelector(s);
 /* ---------- scoring ---------- */
 function handScores(game, hand) {
   const r = game.rules;
-  const mult = hand.mult || 1;
+  const mult = hand.fin == null ? 1 : handMult(game, hand);
   return game.players.map((_, i) => {
     const p = hand.p[i] || {};
-    const pen = (p.pen || 0) * r.penalty;
-    if (hand.fin === i) return -r.finish * mult + pen;
+    const pen = (p.pen || 0) * r.penalty * (r.multPenalty ? mult : 1);
+    if (hand.fin === i) return -r.finish * (r.multFinisher ? mult : 1) + pen;
     if (game.mode === "team" && r.partnerZero && hand.fin != null && partnerOf(game, i) === hand.fin) return pen;
-    if (p.no) return r.notOpened * mult + pen;
-    return (Number(p.v) || 0) * (p.dbl ? 2 : 1) * mult + pen;
+    if (p.no) return r.notOpened * (r.multNotOpened ? mult : 1) + pen;
+    return (Number(p.v) || 0) * (p.dbl ? r.dbl : 1) * mult + pen;
   });
+}
+function handType(game, hand) { return game.rules.types.find(t => t.id === hand.ft) || null; }
+function handMult(game, hand) { const t = handType(game, hand); return t ? t.m : (hand.mult || 1); }
+
+/* ---------- rules editor (used in setup and mid-game) ---------- */
+function mountRules(box, rules, mode) {
+  let r = normRules(rules);
+  const row = (id, label, sub, val) => `<label class="rule"><span>${label}${sub ? `<small>${sub}</small>` : ""}</span><input type="number" id="${id}" inputmode="numeric" value="${val}"></label>`;
+  const tog = (id, label, sub, on) => `<label class="rule"><span>${label}${sub ? `<small>${sub}</small>` : ""}</span><input type="checkbox" id="${id}" ${on ? "checked" : ""}></label>`;
+  const draw = () => {
+    box.innerHTML = `<div class="rules">
+      ${row("rFinish", "Biten oyuncu", "Eksi olarak yazılır", r.finish)}
+      ${row("rNot", "Açamayan cezası", "", r.notOpened)}
+      ${row("rPen", "Ceza puanı", "İşlek taş, okey atma vb.", r.penalty)}
+      ${row("rDbl", "Çift açanın çarpanı", "Kalan taşlar bununla çarpılır", r.dbl)}
+      ${row("rHands", "Toplam el sayısı", "0 = sınırsız", r.hands || 0)}
+      ${mode === "team" ? tog("rPartner", "Eşi biterse el yazılmaz", "Bitenin eşine sadece ceza yazılır", r.partnerZero) : ""}
+    </div>
+    <h2>Bitiş türleri</h2>
+    <div class="rules" id="typeList">
+      ${r.types.map((t, k) => `<div class="rule type-row">
+        <input class="tname" data-tn="${k}" value="${esc(t.n)}" maxlength="20" aria-label="Bitiş adı">
+        <span class="xm">×</span><input type="number" data-tm="${k}" inputmode="numeric" value="${t.m}" aria-label="Çarpan">
+        <button class="tdel" data-tdel="${k}" aria-label="Sil" ${r.types.length < 2 ? "disabled" : ""}>Sil</button>
+      </div>`).join("")}
+      <button class="ghost" id="rtAdd">+ Bitiş türü ekle</button>
+    </div>
+    <h2>Çarpan kime uygulanır?</h2>
+    <div class="rules">
+      ${tog("rMultFin", "Bitene", "Örn. okeyle biten −" + r.finish * 2, r.multFinisher)}
+      ${tog("rMultNot", "Açamayana", "Örn. okeyle bitişte açamayan " + r.notOpened * 2, r.multNotOpened)}
+      ${tog("rMultPen", "Cezalara", "", r.multPenalty)}
+    </div>`;
+    box.querySelector("#rtAdd").onclick = () => { r = read(); r.types.push({ id: newId(), n: "Yeni bitiş", m: 2 }); draw(); };
+    box.querySelectorAll("[data-tdel]").forEach(b => b.onclick = () => { r = read(); if (r.types.length > 1) r.types.splice(+b.dataset.tdel, 1); draw(); });
+  };
+  const num = (id, d) => { const v = parseInt(box.querySelector("#" + id).value); return isNaN(v) ? d : v; };
+  const chk = (id, d) => { const el = box.querySelector("#" + id); return el ? el.checked : d; };
+  const read = () => {
+    const out = clone(r);
+    out.finish = Math.abs(num("rFinish", 101));
+    out.notOpened = num("rNot", 0);
+    out.penalty = num("rPen", 0);
+    out.dbl = Math.max(1, num("rDbl", 2));
+    out.hands = Math.max(0, num("rHands", 0));
+    out.partnerZero = chk("rPartner", r.partnerZero);
+    out.multFinisher = chk("rMultFin", true);
+    out.multNotOpened = chk("rMultNot", true);
+    out.multPenalty = chk("rMultPen", false);
+    out.types = r.types.map((t, k) => ({
+      id: t.id,
+      n: (box.querySelector(`[data-tn="${k}"]`).value.trim() || "Bitiş"),
+      m: Math.max(1, parseInt(box.querySelector(`[data-tm="${k}"]`).value) || 1),
+    }));
+    return out;
+  };
+  draw();
+  return { read, set: nr => { r = normRules(nr); draw(); } };
 }
 function partnerOf(game, i) { return game.teams[0].includes(i) ? game.teams[0].find(x => x !== i) : game.teams[1].find(x => x !== i); }
 function totals(game) {
@@ -284,7 +372,7 @@ function render() {
 function defaultSetup() {
   return store.setup || {
     mode: "single", count: 4, names: ["", "", "", ""], teamNames: ["A Takımı", "B Takımı"],
-    rules: { finish: 101, notOpened: 202, penalty: 101, partnerZero: false, hands: 0 },
+    rules: clone(DEFAULT_RULES),
   };
 }
 
@@ -315,26 +403,43 @@ function renderSetup() {
     ${players}
     ${st.mode === "team" ? `<p class="hint">Karşılıklı oturanlar eş olur: 1 ile 3, 2 ile 4.</p>` : ""}
     <h2>Kurallar</h2>
-    <div class="rules">
-      <label class="rule"><span>Biten oyuncu<small>Eksi olarak yazılır</small></span><input type="number" id="rFinish" inputmode="numeric" value="${st.rules.finish}"></label>
-      <label class="rule"><span>Açamayan cezası</span><input type="number" id="rNot" inputmode="numeric" value="${st.rules.notOpened}"></label>
-      <label class="rule"><span>Ceza (işlek / okey atma)</span><input type="number" id="rPen" inputmode="numeric" value="${st.rules.penalty}"></label>
-      <label class="rule"><span>Toplam el sayısı<small>0 = sınırsız</small></span><input type="number" id="rHands" inputmode="numeric" value="${st.rules.hands || 0}"></label>
-      ${st.mode === "team" ? `<label class="rule"><span>Eşi biterse el yazılmaz<small>Bitenin eşine sadece ceza yazılır</small></span><input type="checkbox" id="rPartner" ${st.rules.partnerZero ? "checked" : ""}></label>` : ""}
+    <p class="hint" style="margin:-4px 2px 10px">Her masanın kuralı farklı. Kendi masanınkini ayarla, istersen adıyla kaydet.</p>
+    <div class="chips" id="presetChips"></div>
+    <div id="rulesBox" style="margin-top:10px"></div>
+    <div class="save-preset">
+      <input id="presetName" placeholder="Kural setine ad ver (örn. Kahve kuralı)" maxlength="24">
+      <button class="ghost" id="presetSave">Kaydet</button>
     </div>
     <div style="margin-top:22px"><button class="primary" id="startBtn">Oyunu başlat</button></div>
     ${store.history.length ? `<h2>Geçmiş oyunlar</h2>${historyList()}` : ""}
   `;
+  const rulesUI = mountRules($("#rulesBox"), st.rules, st.mode);
+  const drawPresets = () => {
+    $("#presetChips").innerHTML = `<button class="chip" data-p="-1">Standart</button>` +
+      store.presets.map((p, k) => `<span class="preset"><button class="chip" data-p="${k}">${esc(p.name)}</button><button class="pdel" data-pd="${k}" aria-label="${esc(p.name)} sil">×</button></span>`).join("");
+    $("#presetChips").querySelectorAll("[data-p]").forEach(b => b.onclick = () => {
+      const k = +b.dataset.p;
+      rulesUI.set(k < 0 ? DEFAULT_RULES : store.presets[k].rules);
+      $("#presetChips").querySelectorAll("[data-p]").forEach(x => x.setAttribute("aria-pressed", x === b));
+    });
+    $("#presetChips").querySelectorAll("[data-pd]").forEach(b => b.onclick = () => { store.presets.splice(+b.dataset.pd, 1); save(); drawPresets(); });
+  };
+  drawPresets();
+  $("#presetSave").onclick = () => {
+    const name = $("#presetName").value.trim();
+    if (!name) { $("#presetName").focus(); $("#presetName").placeholder = "Önce bir ad yaz"; return; }
+    const rules = rulesUI.read();
+    const ex = store.presets.findIndex(p => p.name === name);
+    if (ex >= 0) store.presets[ex].rules = rules; else store.presets.push({ name, rules });
+    $("#presetName").value = ""; save(); drawPresets();
+    $("#presetSave").textContent = "Kaydedildi"; setTimeout(() => { const b = $("#presetSave"); if (b) b.textContent = "Kaydet"; }, 1500);
+  };
   const collect = () => {
     const s = defaultSetup();
     const n = s.mode === "team" ? 4 : s.count;
     for (let i = 0; i < 4; i++) { const el = $("#name" + i); if (el) s.names[i] = el.value.trim(); }
     [0, 1].forEach(k => { const el = $("#tname" + k); if (el) s.teamNames[k] = el.value.trim() || (k ? "B Takımı" : "A Takımı"); });
-    s.rules.finish = Math.abs(parseInt($("#rFinish").value)) || 101;
-    s.rules.notOpened = parseInt($("#rNot").value) || 0;
-    s.rules.penalty = parseInt($("#rPen").value) || 0;
-    s.rules.hands = Math.max(0, parseInt($("#rHands").value) || 0);
-    const pz = $("#rPartner"); if (pz) s.rules.partnerZero = pz.checked;
+    s.rules = rulesUI.read();
     store.setup = s; save();
     return n;
   };
@@ -347,7 +452,7 @@ function renderSetup() {
     const players = Array.from({ length: n }, (_, i) => s.names[i] || "Oyuncu " + (i + 1));
     store.game = {
       id: Date.now(), created: new Date().toISOString(), mode: s.mode, players,
-      teams: [[0, 2], [1, 3]], teamNames: [...s.teamNames], rules: { ...s.rules }, hands: [],
+      teams: [[0, 2], [1, 3]], teamNames: [...s.teamNames], rules: clone(s.rules), hands: [],
     };
     save(); render();
   };
@@ -409,7 +514,8 @@ function renderGame() {
       const sc = handScores(g, h);
       return `<tr data-h="${hi}"><td class="n">${hi + 1}</td>${sc.map((s, i) => {
         const p = h.p[i] || {};
-        const tag = h.fin === i ? (h.mult > 1 ? "bitti ×" + h.mult : "bitti") : p.no ? "açamadı" : p.dbl ? "çift" : p.pen ? p.pen + " ceza" : "";
+        const ht = handType(g, h), hm = handMult(g, h);
+        const tag = h.fin === i ? (ht && hm > 1 ? ht.n.toLowerCase() + " ×" + hm : "bitti") : p.no ? "açamadı" : p.dbl ? "çift" : p.pen ? p.pen + " ceza" : "";
         return `<td class="${h.fin === i ? "fin" : ""}">${fmt(s)}${tag ? `<span class="tag">${tag}</span>` : ""}</td>`;
       }).join("")}</tr>`;
     }).join("");
@@ -434,7 +540,7 @@ function renderGame() {
 function openHand(idx) {
   const g = store.game;
   draft = idx == null
-    ? { idx: null, fin: null, mult: 1, p: g.players.map(() => ({ v: "", no: false, dbl: false, pen: 0 })) }
+    ? { idx: null, fin: null, ft: g.rules.types[0].id, mult: 1, p: g.players.map(() => ({ v: "", no: false, dbl: false, pen: 0 })) }
     : { idx, ...JSON.parse(JSON.stringify(g.hands[idx])) };
   draft.confirmDel = false;
   drawHand();
@@ -458,7 +564,7 @@ function drawHand() {
         <button class="chip" data-f="-1" aria-pressed="${draft.fin == null}">Kimse</button>
       </div>
       ${draft.fin != null ? `<h2>Nasıl bitti?</h2><div class="chips" id="multChips">
-        ${MULTS.map(m => `<button class="chip" data-m="${m.m}" aria-pressed="${draft.mult === m.m}">${m.label}</button>`).join("")}
+        ${g.rules.types.map(t => `<button class="chip" data-t="${t.id}" aria-pressed="${draft.ft === t.id}">${esc(t.n)}${t.m > 1 ? " ×" + t.m : ""}</button>`).join("")}
       </div>` : ""}
       <h2>Kalan taşlar</h2>
       ${order.map(i => {
@@ -489,11 +595,11 @@ function drawHand() {
   $("#finChips").onclick = e => {
     const b = e.target.closest("button"); if (!b) return;
     const f = +b.dataset.f; draft.fin = f < 0 ? null : f;
-    if (draft.fin == null) draft.mult = 1;
+    if (draft.fin == null || !handType(g, draft)) draft.ft = g.rules.types[0].id;
     redraw(sheet);
   };
   const mc = $("#multChips");
-  if (mc) mc.onclick = e => { const b = e.target.closest("button"); if (!b) return; draft.mult = +b.dataset.m; redraw(sheet); };
+  if (mc) mc.onclick = e => { const b = e.target.closest("button"); if (!b) return; draft.ft = b.dataset.t; redraw(sheet); };
   sheet.querySelectorAll("input[data-i]").forEach(inp => inp.oninput = () => {
     const i = +inp.dataset.i; draft.p[i].v = inp.value.replace(/[^0-9]/g, "");
     const s = handScores(g, draft)[i]; const r = $("#r" + i);
@@ -507,7 +613,7 @@ function drawHand() {
   const dn = $("#delNo"); if (dn) dn.onclick = () => { draft.confirmDel = false; redraw(sheet); };
   const dy = $("#delYes"); if (dy) dy.onclick = () => { g.hands.splice(draft.idx, 1); save(); closeLayer(); render(); };
   $("#saveBtn").onclick = () => {
-    const h = { fin: draft.fin, mult: draft.mult, p: draft.p.map(p => ({ v: p.v === "" ? "" : String(+p.v), no: !!p.no, dbl: !!p.dbl, pen: p.pen || 0 })) };
+    const h = { fin: draft.fin, ft: draft.ft, mult: handMult(g, draft), p: draft.p.map(p => ({ v: p.v === "" ? "" : String(+p.v), no: !!p.no, dbl: !!p.dbl, pen: p.pen || 0 })) };
     if (draft.idx == null) g.hands.push(h); else g.hands[draft.idx] = h;
     save(); closeLayer(); render();
     window.scrollTo({ top: document.body.scrollHeight });
@@ -527,10 +633,11 @@ function openMenu(confirmNew) {
       <h2>Bu oyun</h2>
       <div class="menu-list">
         <button class="ghost" id="newBtn">Yeni oyun başlat</button>
+        <button class="ghost" id="rulesBtn">Kuralları düzenle</button>
         <button class="ghost" id="sameBtn">Aynı oyuncularla yeniden başla</button>
       </div>
       <div id="confirmBox"></div>
-      <p class="hint">Biten oyun “Geçmiş oyunlar”a kaydedilir. Kurallar: biten −${g.rules.finish}, açamayan ${g.rules.notOpened}, ceza ${g.rules.penalty}.</p>
+      <p class="hint">Biten oyun “Geçmiş oyunlar”a kaydedilir. Kurallar: biten −${g.rules.finish}, açamayan ${g.rules.notOpened}, ceza ${g.rules.penalty}, çift ×${g.rules.dbl}. Bitişler: ${g.rules.types.map(t => esc(t.n) + " ×" + t.m).join(", ")}.</p>
       ${store.history.length ? `<h2>Geçmiş oyunlar</h2>${historyList()}` : ""}
     </div></div>`;
   $("#scrim").onclick = $("#closeBtn").onclick = closeLayer;
@@ -545,10 +652,27 @@ function openMenu(confirmNew) {
     archive(); store.game = { ...JSON.parse(JSON.stringify(g)), id: Date.now(), created: new Date().toISOString(), hands: [] };
     save(); closeLayer(); render(); window.scrollTo(0, 0);
   });
+  $("#rulesBtn").onclick = openRules;
   if (confirmNew) $("#newBtn").click();
   bindHistory();
 }
 $("#menuBtn").onclick = () => openMenu(false);
+
+function openRules() {
+  const g = store.game;
+  $("#layer").innerHTML = `
+    <div class="scrim" id="scrim"></div>
+    <div class="sheet" role="dialog" aria-label="Kurallar"><div class="sheet-inner">
+      <div class="grab"></div>
+      <div class="sheet-head"><h3>Kurallar</h3><button class="ghost" id="closeBtn">Kapat</button></div>
+      <p class="hint">Değiştirdiğinde oynanmış eller de yeni kurala göre yeniden hesaplanır.</p>
+      <div id="rulesBox" style="margin-top:12px"></div>
+      <div style="margin-top:16px"><button class="primary" id="rulesSave">Kaydet ve yeniden hesapla</button></div>
+    </div></div>`;
+  const ui = mountRules($("#rulesBox"), g.rules, g.mode);
+  $("#scrim").onclick = $("#closeBtn").onclick = closeLayer;
+  $("#rulesSave").onclick = () => { g.rules = ui.read(); save(); closeLayer(); render(); };
+}
 
 render();
 })();
