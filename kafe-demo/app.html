@@ -3,470 +3,636 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1f5a43">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>Masa101</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<script src="/qrcode.js"></script>
 <style>
-/* Layout: top bar with view switch (Masa / Tezgâh / Salon); each view is a single column on phones, wider grids on tablets. */
+/* Layout: iOS-style. Phone: large title + inset grouped lists + bottom tab bar. iPad/desktop panel: sidebar + content. TV: dark full screen. */
 :root {
-  --bg: #eef1ec; --surface: #ffffff; --surface-2: #f5f7f3; --fg: #1c2420; --muted: #66726b; --line: #d8ded6;
-  --felt: #1f5a43; --felt-2: #17463a; --felt-fg: #ffffff; --tile: #fbf8ef; --tile-edge: #e3dcc6;
-  --t-red: #c8312b; --t-blue: #1f5fae; --t-black: #23262b; --t-yellow: #c98a06;
-  --good: #1f7a4d; --warn: #b86e00; --bad: #b3261e; --warn-bg: #fff3dc; --new-bg: #e7f1ff;
-  --display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
-  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --bg: #f2f2f7; --cell: #ffffff; --cell-2: #f2f2f7; --label: #000000; --label-2: rgba(60,60,67,.6); --label-3: rgba(60,60,67,.3);
+  --sep: rgba(60,60,67,.18); --fill: rgba(120,120,128,.12); --fill-2: rgba(120,120,128,.2);
+  --tint: #007aff; --tint-soft: rgba(0,122,255,.12); --green: #34c759; --red: #ff3b30; --orange: #ff9500; --yellow: #ffcc00;
+  --bar: rgba(249,249,249,.82); --shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
+  --t-red: #ff3b30; --t-blue: #007aff; --t-black: #1c1c1e; --t-yellow: #ff9500;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
+  --round: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0f1713; --surface: #18221d; --surface-2: #1e2a24; --fg: #e8eee9; --muted: #93a39a; --line: #2c3a33;
-    --felt: #2e7a5c; --felt-2: #1f5a43; --tile: #2a2a24; --tile-edge: #3a392f;
-    --t-red: #ff6b5e; --t-blue: #6aa5ff; --t-black: #d6dad7; --t-yellow: #f2bd3d;
-    --good: #5fd39a; --warn: #f2bd3d; --bad: #ff7b72; --warn-bg: #3a2e14; --new-bg: #16283f; color-scheme: dark;
+    --bg: #000000; --cell: #1c1c1e; --cell-2: #2c2c2e; --label: #ffffff; --label-2: rgba(235,235,245,.6); --label-3: rgba(235,235,245,.3);
+    --sep: rgba(84,84,88,.6); --fill: rgba(118,118,128,.24); --fill-2: rgba(118,118,128,.32);
+    --tint: #0a84ff; --tint-soft: rgba(10,132,255,.18); --green: #30d158; --red: #ff453a; --orange: #ff9f0a; --yellow: #ffd60a;
+    --bar: rgba(22,22,24,.8); --shadow: none;
+    --t-red: #ff453a; --t-blue: #0a84ff; --t-black: #e5e5ea; --t-yellow: #ff9f0a; color-scheme: dark;
   }
 }
 * { box-sizing: border-box; }
 html, body { min-height: 100%; }
-body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.45 var(--body); -webkit-tap-highlight-color: transparent;
-  padding-top: env(safe-area-inset-top, 0px); }
-body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--felt); }
-button, input, select { font: inherit; color: inherit; }
-button { cursor: pointer; }
-:focus-visible { outline: 2px solid var(--t-blue); outline-offset: 2px; }
+body { margin: 0; background: var(--bg); color: var(--label); font: 17px/1.29 var(--font); letter-spacing: -.01em; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+button, input, select, textarea { font: inherit; color: inherit; letter-spacing: inherit; }
+button { cursor: pointer; background: none; border: 0; padding: 0; }
+:focus-visible { outline: 2px solid var(--tint); outline-offset: 2px; border-radius: 6px; }
 [hidden] { display: none !important; }
+svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 .gut { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-.wrap { max-width: 1100px; margin: 0 auto; }
-.num { font-family: var(--display); font-variant-numeric: tabular-nums; }
+.page { max-width: 720px; margin: 0 auto; padding-top: env(safe-area-inset-top, 0px); padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
+.num { font-family: var(--round); font-variant-numeric: tabular-nums; }
 
-/* top bar */
-.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 8; background: var(--felt); color: var(--felt-fg); }
-.top .wrap { display: flex; align-items: center; gap: 12px; padding-block: 10px; flex-wrap: wrap; }
-.brand { display: flex; align-items: center; gap: 10px; margin-right: auto; }
-.tile { display: inline-grid; place-items: center; border-radius: 6px; background: var(--tile); border: 1px solid var(--tile-edge); box-shadow: 0 2px 0 var(--tile-edge); font-family: var(--display); font-weight: 700; color: var(--t-red); }
-.brand .tile { width: 28px; height: 36px; font-size: 18px; }
-.brand b { font: 700 22px/1 var(--display); letter-spacing: .02em; display: block; }
-.brand small { font-size: 11px; opacity: .8; }
-.views { display: flex; background: rgba(0,0,0,.18); border-radius: 12px; padding: 3px; gap: 2px; }
-.views a { color: var(--felt-fg); text-decoration: none; padding: 7px 12px; border-radius: 9px; font-weight: 600; font-size: 14px; opacity: .8; position: relative; }
-.views a[aria-current="page"] { background: var(--felt-fg); color: var(--felt); opacity: 1; }
-.badge { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; border-radius: 9px; background: var(--bad); color: #fff; font: 700 11px/18px var(--body); text-align: center; padding: 0 4px; }
-.demo-strip { background: var(--felt-2); color: var(--felt-fg); font-size: 12px; }
-.demo-strip .wrap { padding-block: 6px; display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
-.demo-strip button { background: transparent; border: 1px solid rgba(255,255,255,.35); color: var(--felt-fg); border-radius: 8px; padding: 3px 8px; font-size: 12px; }
+/* nav + titles */
+.navbar { position: sticky; top: 0; z-index: 9; background: var(--bar); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: .5px solid var(--sep); padding-top: env(safe-area-inset-top, 0px); }
+.navbar .in { display: flex; align-items: center; justify-content: space-between; gap: 10px; height: 44px; max-width: 1200px; margin: 0 auto; }
+.navbar .title { font-weight: 600; font-size: 17px; text-align: center; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.navbar .side { min-width: 70px; display: flex; gap: 14px; align-items: center; }
+.navbar .side:last-child { justify-content: flex-end; }
+.link { color: var(--tint); font-size: 17px; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; }
+.large { font-size: 34px; line-height: 1.12; font-weight: 700; letter-spacing: .01em; margin: 14px 0 4px; text-wrap: balance; }
+.sub { color: var(--label-2); font-size: 15px; margin: 0 0 8px; }
+.eyebrow { color: var(--label-2); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; }
 
-main { padding-block: 16px 120px; }
-h2 { font: 600 12px/1 var(--body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 22px 0 10px; }
-h2:first-child { margin-top: 4px; }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
-.primary { border: 0; border-radius: 14px; padding: 14px 18px; background: var(--felt); color: var(--felt-fg); font: 700 18px var(--display); letter-spacing: .04em; }
-.primary:disabled { opacity: .45; }
-.ghost { border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 10px 14px; font-weight: 600; }
-.danger { color: var(--bad); }
-.hint { color: var(--muted); font-size: 13px; margin: 8px 2px 0; }
-.seg { display: inline-grid; grid-auto-flow: column; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 3px; gap: 3px; }
-.seg button { border: 0; background: transparent; padding: 8px 14px; border-radius: 9px; font-weight: 600; color: var(--muted); }
-.seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+/* grouped lists */
+.sec { margin-top: 26px; }
+.sec-h { font-size: 13px; color: var(--label-2); text-transform: uppercase; margin: 0 16px 7px; letter-spacing: .01em; display: flex; justify-content: space-between; gap: 8px; }
+.sec-h.big { text-transform: none; font-size: 22px; font-weight: 700; color: var(--label); margin: 0 0 10px; letter-spacing: .01em; }
+.sec-f { font-size: 13px; color: var(--label-2); margin: 7px 16px 0; }
+.group { background: var(--cell); border-radius: 12px; overflow: hidden; }
+.row { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 11px 16px; position: relative; width: 100%; text-align: left; }
+.row + .row::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; border-top: .5px solid var(--sep); }
+.row.ind + .row.ind::before { left: 60px; }
+.row .grow { flex: 1; min-width: 0; }
+.row .t { display: block; }
+.row .d { display: block; color: var(--label-2); font-size: 15px; margin-top: 1px; }
+.row .val { color: var(--label-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.row .chev { color: var(--label-3); }
+.row.tap { cursor: pointer; }
+.row.tap:active { background: var(--fill); }
+.row input.inl, .row select.inl, .row textarea.inl { flex: 1; min-width: 0; border: 0; background: transparent; outline: none; text-align: right; color: var(--label-2); font-size: 17px; }
+.row textarea.inl { text-align: left; resize: none; }
+.icon-sq { width: 30px; height: 30px; border-radius: 7px; display: grid; place-items: center; color: #fff; flex: none; }
+.icon-sq svg.i { width: 18px; height: 18px; stroke-width: 2; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--pc, var(--label-3)); flex: none; }
 .c0 { --pc: var(--t-red); } .c1 { --pc: var(--t-blue); } .c2 { --pc: var(--t-black); } .c3 { --pc: var(--t-yellow); }
-.money { font-family: var(--display); font-weight: 700; font-variant-numeric: tabular-nums; }
 
-/* masa view */
-.table-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.table-head h1 { margin: 0; font: 700 34px/1 var(--display); }
-.table-head select { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 6px 8px; }
-.tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 4px; margin-top: 14px; }
-.tabs button { border: 0; background: transparent; padding: 10px; border-radius: 10px; font-weight: 600; color: var(--muted); }
-.tabs button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
-.tabs .cnt { font-family: var(--display); font-weight: 700; color: var(--felt); margin-left: 4px; }
+/* controls */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 50px; border-radius: 12px; padding: 0 20px; font-weight: 600; font-size: 17px; }
+.btn.fill { background: var(--tint); color: #fff; }
+.btn.tinted { background: var(--tint-soft); color: var(--tint); }
+.btn.gray { background: var(--fill); color: var(--label); }
+.btn.red { background: rgba(255,59,48,.12); color: var(--red); }
+.btn.small { height: 34px; border-radius: 17px; padding: 0 14px; font-size: 15px; }
+.btn.block { width: 100%; }
+.btn:disabled { opacity: .4; }
+.btn:active { opacity: .7; }
+.plus { width: 30px; height: 30px; border-radius: 50%; background: var(--tint-soft); color: var(--tint); display: grid; place-items: center; font-size: 22px; font-weight: 500; line-height: 1; flex: none; }
+.stepper { display: inline-flex; align-items: center; background: var(--fill); border-radius: 9px; height: 32px; flex: none; }
+.stepper button { width: 40px; height: 32px; font-size: 20px; color: var(--label); }
+.stepper span { min-width: 22px; text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--fill); border-radius: 9px; padding: 2px; gap: 2px; }
+.seg button { height: 30px; border-radius: 7px; font-size: 13px; font-weight: 500; padding: 0 10px; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--cell); font-weight: 600; box-shadow: 0 3px 8px rgba(0,0,0,.12), 0 3px 1px rgba(0,0,0,.04); }
+@media (prefers-color-scheme: dark) { .seg button[aria-pressed="true"] { background: #636366; } }
+.switch { appearance: none; -webkit-appearance: none; width: 51px; height: 31px; border-radius: 16px; background: var(--fill-2); position: relative; flex: none; cursor: pointer; transition: background .2s; margin: 0; }
+.switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 3px 8px rgba(0,0,0,.15), 0 3px 1px rgba(0,0,0,.06); transition: transform .2s; }
+.switch:checked { background: var(--green); }
+.switch:checked::after { transform: translateX(20px); }
+.search { display: flex; align-items: center; gap: 6px; background: var(--fill); border-radius: 10px; height: 36px; padding: 0 8px; color: var(--label-2); }
+.search input { flex: 1; min-width: 0; border: 0; background: transparent; outline: none; font-size: 17px; color: var(--label); }
+.chips { display: flex; gap: 8px; overflow-x: auto; padding: 10px 0 2px; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { height: 32px; border-radius: 16px; padding: 0 14px; background: var(--cell); font-size: 15px; font-weight: 500; white-space: nowrap; }
+.chip[aria-pressed="true"] { background: var(--label); color: var(--bg); }
+.pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 99px; white-space: nowrap; }
+.p-blue { background: var(--tint-soft); color: var(--tint); }
+.p-orange { background: rgba(255,149,0,.15); color: var(--orange); }
+.p-green { background: rgba(52,199,89,.15); color: var(--green); }
+.p-red { background: rgba(255,59,48,.13); color: var(--red); }
+.p-gray { background: var(--fill); color: var(--label-2); }
+.badge { min-width: 18px; height: 18px; border-radius: 9px; background: var(--red); color: #fff; font-size: 12px; font-weight: 600; display: inline-grid; place-items: center; padding: 0 5px; }
 
-.stand { display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 12px; padding: 10px 14px; }
-.stand + .stand { margin-top: 8px; }
-.stand.lead { border-color: var(--felt); box-shadow: inset 0 0 0 1px var(--felt); }
-.stand .tile { width: 28px; height: 36px; font-size: 18px; color: var(--pc); }
-.stand b { font-weight: 600; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.stand small { color: var(--muted); font-size: 12px; display: block; }
-.stand .total { font: 700 28px/1 var(--display); font-variant-numeric: tabular-nums; text-align: right; }
-.pill { display: inline-block; font: 600 10px/1 var(--body); text-transform: uppercase; letter-spacing: .08em; padding: 3px 6px; border-radius: 99px; background: var(--felt); color: var(--felt-fg); vertical-align: 2px; margin-left: 6px; }
-.pill.pay { background: var(--warn); }
-.ledger { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-th, td { padding: 9px 8px; text-align: center; border-bottom: 1px solid var(--line); }
-th { font: 600 12px var(--body); color: var(--muted); }
-td { font: 600 18px var(--display); }
-td small { display: block; font: 500 11px var(--body); color: var(--muted); }
-td.fin { color: var(--good); }
-th.n, td.n { width: 34px; color: var(--muted); font-size: 12px; }
-tfoot td { background: var(--surface-2); border-bottom: 0; font-size: 21px; }
-tbody tr { cursor: pointer; }
-.field { display: flex; align-items: center; gap: 10px; padding: 2px 12px; }
-.field + .field { margin-top: 8px; }
-.field .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--pc); flex: none; }
-.field input { border: 0; background: transparent; padding: 10px 0; flex: 1; min-width: 0; outline: none; font-size: 16px; }
-.setup-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-.team-lbl { font: 700 16px var(--display); color: var(--pc); margin: 0 0 8px 2px; }
+/* tab bar + floating action */
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 9; background: var(--bar); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-top: .5px solid var(--sep); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.tabbar .in { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; max-width: 720px; margin: 0 auto; height: 50px; }
+.tabbar button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 10px; font-weight: 500; color: var(--label-2); position: relative; }
+.tabbar button[aria-current="page"] { color: var(--tint); }
+.tabbar .badge { position: absolute; top: 2px; left: calc(50% + 6px); }
+.fab { position: fixed; left: 0; right: 0; bottom: calc(58px + env(safe-area-inset-bottom, 0px)); z-index: 8; }
+.fab .in { max-width: 720px; margin: 0 auto; }
+.fab .btn { box-shadow: 0 8px 24px rgba(0,0,0,.18); width: 100%; justify-content: space-between; }
 
-.cats { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
-.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 8px 14px; font-weight: 600; font-size: 14px; white-space: nowrap; }
-.chip[aria-pressed="true"] { background: var(--felt); border-color: var(--felt); color: var(--felt-fg); }
-.menu { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); margin-top: 12px; }
-.item { display: grid; gap: 8px; padding: 12px; }
-.item b { font-weight: 600; }
-.item .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.item .price { font: 700 20px var(--display); }
-.qty { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
-.qty button { border: 0; background: var(--surface-2); width: 36px; height: 34px; font-weight: 700; font-size: 18px; }
-.qty span { min-width: 26px; text-align: center; font: 700 18px var(--display); }
-.item.in { border-color: var(--felt); box-shadow: inset 0 0 0 1px var(--felt); }
-.add { border: 0; background: var(--felt); color: var(--felt-fg); border-radius: 10px; height: 34px; padding: 0 14px; font-weight: 700; }
+/* menu */
+.pop { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(150px, 1fr); gap: 10px; overflow-x: auto; scrollbar-width: none; }
+.pop::-webkit-scrollbar { display: none; }
+.pcard { background: var(--cell); border-radius: 14px; padding: 12px; display: grid; gap: 10px; text-align: left; }
+.thumb { width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center; color: #fff; flex: none; }
+.thumb svg.i { width: 24px; height: 24px; }
+.k0 { background: linear-gradient(160deg, #ff9f0a, #ff6b00); } .k1 { background: linear-gradient(160deg, #5ac8fa, #007aff); }
+.k2 { background: linear-gradient(160deg, #ffd60a, #ff9500); } .k3 { background: linear-gradient(160deg, #a2845e, #7b5e3b); }
+.pcard .bot { display: flex; justify-content: space-between; align-items: center; }
+.price { font-weight: 600; font-variant-numeric: tabular-nums; }
+.soldout { opacity: .45; }
 
-.my-orders { display: grid; gap: 8px; }
-.ord-line { display: flex; justify-content: space-between; gap: 10px; padding: 10px 14px; align-items: center; }
-.ord-line .what { min-width: 0; }
-.ord-line small { color: var(--muted); display: block; font-size: 12px; }
-.status { font: 600 11px/1 var(--body); text-transform: uppercase; letter-spacing: .06em; padding: 5px 8px; border-radius: 99px; white-space: nowrap; }
-.st-new { background: var(--new-bg); color: var(--t-blue); }
-.st-prep { background: var(--warn-bg); color: var(--warn); }
-.st-done { background: var(--surface-2); color: var(--good); }
-
-.bill-lines { padding: 6px 14px; }
-.bill-line { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px dashed var(--line); }
-.bill-line:last-child { border-bottom: 0; }
-.bill-total { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 14px; background: var(--surface-2); border-top: 1px solid var(--line); border-radius: 0 0 14px 14px; }
-.bill-total .money { font-size: 30px; }
-.payer { padding: 14px; display: grid; gap: 10px; margin-top: 12px; border-color: var(--warn); }
-.payer .big { font: 700 26px/1.1 var(--display); }
-.payer .split { display: grid; gap: 6px; }
-.payer .split div { display: flex; justify-content: space-between; }
-
-.bottombar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; padding-top: 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, var(--bg) 70%, transparent); }
-.bottombar .wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-width: 700px; }
-.bottombar .wide { grid-column: 1 / -1; }
-.bottombar .ghost { padding: 13px; box-shadow: 0 4px 14px rgba(0,0,0,.08); }
-.bottombar .ghost.on { border-color: var(--warn); color: var(--warn); }
-.cartbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; }
-
-/* counter */
-.calls { display: grid; gap: 8px; margin-bottom: 14px; }
-.call { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: var(--warn-bg); border-color: var(--warn); }
-.call b { font: 700 22px var(--display); }
-.board { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); align-items: start; }
-.col h2 { display: flex; justify-content: space-between; margin-top: 0; }
-.col-list { display: grid; gap: 8px; }
-.ticket { padding: 12px 14px; display: grid; gap: 8px; }
-.ticket.fresh { animation: pulse 1.2s ease-out 2; }
-@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(31,95,174,.55); } 100% { box-shadow: 0 0 0 14px rgba(31,95,174,0); } }
-.ticket .th { display: flex; justify-content: space-between; align-items: baseline; }
-.ticket .th b { font: 700 26px/1 var(--display); }
-.ticket .th small { color: var(--muted); }
-.ticket ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; }
-.ticket li { font-size: 16px; }
-.ticket li .q { font: 700 18px var(--display); color: var(--felt); margin-right: 6px; }
-.empty { padding: 20px; text-align: center; color: var(--muted); }
-
-/* salon */
-.salon { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
-.tcard { padding: 14px; display: grid; gap: 6px; text-align: left; cursor: pointer; }
-.tcard.idle { opacity: .6; }
-.tcard .th { display: flex; justify-content: space-between; align-items: center; }
-.tcard .th b { font: 700 24px var(--display); }
-.tcard .money { font-size: 26px; }
-.tcard small { color: var(--muted); font-size: 12px; }
-.tcard .tags { display: flex; gap: 4px; flex-wrap: wrap; }
-.summary { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-bottom: 14px; }
-.summary .card { padding: 12px 14px; }
-.summary small { color: var(--muted); font-size: 12px; display: block; }
-.summary .money { font-size: 28px; }
+/* game */
+.rank { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-family: var(--round); font-weight: 700; font-size: 15px; background: var(--fill); flex: none; }
+.rank.first { background: var(--yellow); color: #000; }
+.score { font-family: var(--round); font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.score.neg, td.neg { color: var(--green); }
+.ledger { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.ledger th { font-size: 13px; color: var(--label-2); font-weight: 500; padding: 10px 6px; text-align: right; }
+.ledger th:first-child, .ledger td:first-child { text-align: left; padding-left: 16px; color: var(--label-2); width: 56px; }
+.ledger td { padding: 11px 6px; text-align: right; border-top: .5px solid var(--sep); font-family: var(--round); font-weight: 600; }
+.ledger td small { display: block; color: var(--label-2); font-size: 12px; font-weight: 500; font-family: var(--font); }
+.ledger th:last-child, .ledger td:last-child { padding-right: 16px; }
+.ledger tbody tr { cursor: pointer; }
+.ledger tbody tr:active { background: var(--fill); }
+.ledger tfoot td { font-size: 19px; background: var(--cell-2); }
+.payer { background: var(--cell); border-radius: 12px; padding: 16px; display: grid; gap: 12px; }
+.payer .big { font-size: 22px; font-weight: 700; }
+.payer .who { display: grid; gap: 6px; }
+.payer .who div { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; }
 
 /* sheet */
-.scrim { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 20; }
-.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 21; max-height: 92vh; overflow-y: auto; background: var(--bg); border-radius: 20px 20px 0 0; padding-top: 8px; padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
-.sheet .wrap { max-width: 640px; }
-.grab { width: 40px; height: 4px; border-radius: 2px; background: var(--line); margin: 0 auto 10px; }
-.sheet-head { display: flex; align-items: center; justify-content: space-between; }
-.sheet-head h3 { margin: 0; font: 700 24px var(--display); }
-.prow { padding: 10px 12px; display: grid; gap: 8px; }
-.prow + .prow { margin-top: 6px; }
-.prow.neg { border-color: var(--good); }
-.prow-top { display: flex; align-items: center; gap: 10px; }
-.prow .name { flex: 1; min-width: 0; font-weight: 600; }
-.prow .name::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--pc); margin-right: 8px; }
-.prow .runtot { display: block; font-size: 12px; font-weight: 500; color: var(--muted); }
-.sign { flex: none; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); font: 700 24px/1 var(--display); color: var(--muted); }
-.sign[aria-pressed="true"] { background: var(--good); border-color: var(--good); color: var(--felt-fg); }
-.prow input { width: 110px; text-align: right; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: var(--surface-2); font: 700 22px var(--display); }
-.opts { display: flex; gap: 6px; flex-wrap: wrap; }
-.opt { border: 1px solid var(--line); background: var(--surface-2); border-radius: 7px; padding: 4px 9px; font-size: 12px; font-weight: 600; }
-.confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--bad); margin-top: 10px; }
-.confirm p { margin: 0; flex: 1 1 180px; }
-.toast { position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-weight: 600; z-index: 30; box-shadow: 0 6px 20px rgba(0,0,0,.25); max-width: calc(100vw - 32px); }
-.offline { background: var(--bad); color: #fff; text-align: center; font-size: 12px; padding: 4px; }
-@media (prefers-reduced-motion: reduce) { .ticket.fresh { animation: none; } }
+.scrim { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 20; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 21; max-height: 94vh; overflow-y: auto; background: var(--bg); border-radius: 14px 14px 0 0; padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)); }
+.sheet.anim { animation: up .28s cubic-bezier(.2,.8,.2,1); }
+@keyframes up { from { transform: translateY(40px); opacity: .5; } }
+.sheet .in { max-width: 640px; margin: 0 auto; }
+.grabber { width: 36px; height: 5px; border-radius: 3px; background: var(--fill-2); margin: 6px auto 4px; }
+.sheet-nav { display: flex; align-items: center; justify-content: space-between; height: 44px; }
+.sheet-nav b { font-size: 17px; font-weight: 600; }
+.hrow { background: var(--cell); border-radius: 12px; padding: 10px 12px; display: grid; gap: 8px; }
+.hrow + .hrow { margin-top: 8px; }
+.hrow.neg { box-shadow: inset 0 0 0 2px var(--green); }
+.hrow .top { display: flex; align-items: center; gap: 10px; }
+.hrow .nm { flex: 1; min-width: 0; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.hrow .nm small { display: block; font-weight: 400; color: var(--label-2); font-size: 13px; }
+.sign { width: 44px; height: 44px; border-radius: 10px; background: var(--fill); font-size: 24px; font-weight: 600; color: var(--label-2); flex: none; }
+.sign[aria-pressed="true"] { background: var(--green); color: #fff; }
+.hrow input { width: 108px; height: 44px; border: 0; border-radius: 10px; background: var(--fill); text-align: right; padding: 0 12px; font: 700 24px var(--round); font-variant-numeric: tabular-nums; outline: none; }
+.hrow input:focus { box-shadow: 0 0 0 2px var(--tint); }
+.qk { display: flex; gap: 6px; flex-wrap: wrap; }
+.qk button { height: 28px; border-radius: 14px; padding: 0 10px; background: var(--fill); font-size: 13px; font-weight: 500; }
+.confirm { background: var(--cell); border-radius: 12px; padding: 14px 16px; display: grid; gap: 10px; margin-top: 12px; }
+.confirm .acts { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* panel */
+.split { display: grid; grid-template-columns: 1fr; min-height: 100vh; }
+.sidebar { display: none; }
+@media (min-width: 900px) {
+  .split { grid-template-columns: 280px 1fr; }
+  .sidebar { display: block; position: sticky; top: 0; height: 100vh; overflow-y: auto; border-right: .5px solid var(--sep); background: var(--bg); padding: calc(10px + env(safe-area-inset-top, 0px)) 12px 20px max(12px, env(safe-area-inset-left, 0px)); }
+  .panel-tabs { display: none !important; }
+}
+.sidebar .large { margin: 18px 8px 14px; font-size: 30px; }
+.side-item { display: flex; align-items: center; gap: 12px; width: 100%; height: 44px; padding: 0 10px; border-radius: 10px; font-size: 17px; text-align: left; }
+.side-item svg.i { color: var(--tint); }
+.side-item[aria-current="page"] { background: var(--tint); color: #fff; }
+.side-item[aria-current="page"] svg.i { color: #fff; }
+.side-item .badge { margin-left: auto; }
+.side-item[aria-current="page"] .badge { background: #fff; color: var(--tint); }
+.content { min-width: 0; }
+.content .page { max-width: 1100px; padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
+.panel-tabs { overflow-x: auto; scrollbar-width: none; margin-top: 10px; }
+.panel-tabs .seg { display: inline-grid; min-width: 100%; }
+.stats { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.stat { background: var(--cell); border-radius: 12px; padding: 12px 14px; }
+.stat small { color: var(--label-2); font-size: 13px; display: block; }
+.stat b { font-family: var(--round); font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.board { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); align-items: start; }
+.ticket { background: var(--cell); border-radius: 12px; padding: 14px 16px; display: grid; gap: 10px; }
+.ticket + .ticket { margin-top: 10px; }
+.ticket.fresh { animation: glow 1.4s ease-out 2; }
+@keyframes glow { 0% { box-shadow: 0 0 0 0 rgba(0,122,255,.5); } 100% { box-shadow: 0 0 0 14px rgba(0,122,255,0); } }
+.ticket .th { display: flex; justify-content: space-between; align-items: baseline; }
+.ticket .th b { font-size: 22px; font-weight: 700; }
+.ticket .th small { color: var(--label-2); font-size: 13px; }
+.ticket ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+.ticket li b { color: var(--tint); font-variant-numeric: tabular-nums; margin-right: 6px; }
+.ticket .note { font-size: 14px; color: var(--orange); }
+.callrow { background: rgba(255,149,0,.12); border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.callrow + .callrow { margin-top: 8px; }
+.tables { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+.tcard { background: var(--cell); border-radius: 14px; padding: 14px; display: grid; gap: 6px; text-align: left; min-height: 128px; align-content: start; }
+.tcard.idle { background: transparent; box-shadow: inset 0 0 0 1px var(--sep); color: var(--label-2); }
+.tcard .th { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.tcard .th b { font-size: 20px; font-weight: 700; }
+.tcard .amt { font-family: var(--round); font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.tcard small { color: var(--label-2); font-size: 13px; }
+.qrs { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.qrcard { background: var(--cell); border-radius: 14px; padding: 16px; display: grid; gap: 8px; justify-items: center; text-align: center; }
+.qrcard .qr { width: 100%; max-width: 170px; aspect-ratio: 1; background: #fff; border-radius: 8px; padding: 6px; }
+.qrcard .qr svg { width: 100%; height: auto; display: block; }
+.qrcard b { font-size: 20px; }
+.qrcard small { color: var(--label-2); font-size: 12px; word-break: break-all; }
+
+/* launcher */
+.hero-qr { display: grid; gap: 16px; grid-template-columns: 1fr; align-items: center; background: var(--cell); border-radius: 16px; padding: 18px; }
+@media (min-width: 640px) { .hero-qr { grid-template-columns: 180px 1fr; } }
+.hero-qr .qr { width: 180px; max-width: 100%; aspect-ratio: 1; background: #fff; border-radius: 10px; padding: 8px; }
+.hero-qr .qr svg { width: 100%; height: auto; display: block; }
+.steps { margin: 0; padding-left: 20px; display: grid; gap: 6px; color: var(--label-2); font-size: 15px; }
+
+/* tv */
+.tv { min-height: 100vh; background: #000; color: #fff; padding: 28px 36px; display: grid; gap: 24px; grid-template-rows: auto 1fr; }
+.tv header { display: flex; justify-content: space-between; align-items: baseline; gap: 20px; }
+.tv h1 { margin: 0; font-size: clamp(28px, 3.4vw, 52px); font-weight: 700; letter-spacing: .01em; }
+.tv .clock { font-family: var(--round); font-size: clamp(24px, 3vw, 44px); font-weight: 600; color: rgba(235,235,245,.6); font-variant-numeric: tabular-nums; }
+.tv .grid { display: grid; gap: 22px; grid-template-columns: 1fr; }
+@media (min-width: 1000px) { .tv .grid { grid-template-columns: 2.2fr 1fr; } }
+.tv .live { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); align-content: start; }
+.tvcard { background: #1c1c1e; border-radius: 20px; padding: 20px 22px; display: grid; gap: 12px; align-content: start; align-self: start; }
+.tvcard .th { display: flex; justify-content: space-between; align-items: baseline; }
+.tvcard .th b { font-size: 28px; }
+.tvcard .th span { color: rgba(235,235,245,.6); font-size: 18px; }
+.tvrow { display: flex; align-items: center; gap: 12px; font-size: 22px; }
+.tvrow .grow { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tvrow .s { font-family: var(--round); font-weight: 700; font-size: 30px; font-variant-numeric: tabular-nums; }
+.tvrow .rank { width: 34px; height: 34px; font-size: 18px; background: #2c2c2e; color: #fff; }
+.tvrow .rank.first { background: #ffd60a; color: #000; }
+.tv .lb { background: #1c1c1e; border-radius: 20px; padding: 20px 22px; align-self: start; }
+.tv .lb h2 { margin: 0 0 12px; font-size: 26px; }
+.tv .lb .tvrow + .tvrow { margin-top: 12px; }
+.tv .empty { color: rgba(235,235,245,.6); font-size: 22px; padding: 30px; text-align: center; background: #1c1c1e; border-radius: 20px; }
+
+.empty-state { text-align: center; padding: 34px 20px; color: var(--label-2); background: var(--cell); border-radius: 12px; }
+.empty-state b { display: block; color: var(--label); font-size: 20px; margin-bottom: 6px; }
+.toast { position: fixed; left: 50%; top: calc(54px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); z-index: 30; background: var(--bar); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 8px 30px rgba(0,0,0,.18); border-radius: 22px; padding: 12px 18px; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; max-width: calc(100vw - 32px); }
+.toast svg.i { color: var(--green); }
+.offline { position: fixed; left: 0; right: 0; top: 0; z-index: 40; background: var(--red); color: #fff; text-align: center; font-size: 13px; padding: calc(4px + env(safe-area-inset-top, 0px)) 8px 4px; }
+@media (prefers-reduced-motion: reduce) { .sheet.anim, .ticket.fresh { animation: none; } .switch, .switch::after { transition: none; } }
+@media print {
+  body { background: #fff; }
+  .sidebar, .navbar, .panel-tabs, .noprint, .tabbar, .fab { display: none !important; }
+  .split { display: block; }
+  .qrs { grid-template-columns: repeat(3, 1fr); }
+  .qrcard { break-inside: avoid; border: 1px solid #ccc; color: #000; background: #fff; }
+}
 </style>
 </head>
 <body>
-<header class="top">
-  <div class="wrap gut">
-    <div class="brand"><span class="tile" aria-hidden="true">1</span><div><b>Masa101</b><small>Skor · Sipariş · Adisyon</small></div></div>
-    <nav class="views" aria-label="Ekran">
-      <a href="#masa" data-v="masa">Masa</a>
-      <a href="#tezgah" data-v="tezgah">Tezgâh<span class="badge" id="bTez" hidden></span></a>
-      <a href="#salon" data-v="salon">Salon</a>
-    </nav>
-  </div>
-</header>
-<div class="demo-strip"><div class="wrap gut"><span>Demo · Menü ve diğer masalar örnek. Bir cihazı masa, diğerini tezgâh yapın.</span><button id="resetBtn">Demoyu sıfırla</button></div></div>
-<div class="offline" id="offline" hidden>Bağlantı yok, tekrar deneniyor…</div>
-<main class="gut"><div class="wrap" id="app"></div></main>
-<div id="bottom"></div>
+<div id="root"></div>
 <div id="layer"></div>
 <div id="toast" class="toast" hidden></div>
-
+<div id="offline" class="offline" hidden>Bağlantı yok, yeniden deneniyor…</div>
 <script>
 (() => {
-const ROOM = (new URLSearchParams(location.search).get("k") || "demo");
+const qs = new URLSearchParams(location.search);
+const ROOM = (qs.get("k") || "demo");
 const API = "/api/state?k=" + encodeURIComponent(ROOM);
 const COLORS = ["c0", "c1", "c2", "c3"];
 const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const fmt = n => (n < 0 ? "−" : "") + Math.abs(n);
-const tl = n => n.toLocaleString("tr-TR") + " ₺";
+const tl = n => "₺" + n.toLocaleString("tr-TR");
 const ls = {
   get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
 };
+const IC = {
+  menu: '<path d="M4 6h16M4 12h16M4 18h10"/>',
+  game: '<rect x="3.5" y="5" width="7.5" height="14" rx="2"/><rect x="13" y="5" width="7.5" height="14" rx="2"/><path d="M7.2 10v4M16.8 10v4"/>',
+  bill: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>',
+  tray: '<path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h5l1 2h6l1-2h5"/>',
+  grid: '<rect x="4" y="4" width="7" height="7" rx="1.6"/><rect x="13" y="4" width="7" height="7" rx="1.6"/><rect x="4" y="13" width="7" height="7" rx="1.6"/><rect x="13" y="13" width="7" height="7" rx="1.6"/>',
+  list: '<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>',
+  qr: '<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2"/>',
+  trophy: '<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3.5 4M16 6h3a3 3 0 0 1-3.5 4M12 13v4M8.5 20h7"/>',
+  tv: '<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 20h8"/>',
+  phone: '<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
+  ipad: '<rect x="4" y="2.5" width="16" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
+  bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',
+  card: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  back: '<path d="M15 5l-7 7 7 7"/>',
+  chev: '<path d="M9 5l7 7-7 7"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/>',
+  cup: '<path d="M5 9h11v5a5 5 0 0 1-10 0z"/><path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16M8 3.5v2M11 3.5v2"/>',
+  glass: '<path d="M7 4h10l-1.4 15a2 2 0 0 1-2 1.8h-3.2a2 2 0 0 1-2-1.8z"/><path d="M7.6 9h8.8"/>',
+  food: '<path d="M4 12a8 5 0 0 1 16 0z"/><path d="M3 15h18M5 18h14"/>',
+  nut: '<ellipse cx="12" cy="13" rx="6" ry="7"/><path d="M12 6v14M9 3.5l3 2.5 3-2.5"/>',
+  sound: '<path d="M4 10v4h4l5 4V6L8 10z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/>',
+  print: '<path d="M7 9V4h10v5M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="7" y="14" width="10" height="6" rx="1"/>',
+};
+const ic = (n, cls = "i") => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${IC[n]}</svg>`;
+const CAT_ICON = ["cup", "glass", "food", "nut"];
 
-let S = null;                       // shared state from the server
-let view = "masa";
-let tableNo = ls.get("m101.table", 4);
-let tab = "skor";
-let cat = null;
-let cart = {};
+let S = null, lastV = -1, pendingRender = false;
+let tableNo = +qs.get("masa") || ls.get("m101.table", 4);
+if (qs.get("masa")) ls.set("m101.table", tableNo);
+let custTab = ls.get("m101.ctab", "menu");
+let cat = -1, query = "";
+let cart = ls.get("m101.cart." + ROOM + "." + tableNo, {});
 let payMode = "loser";
-let seenOrders = null;
-let soundOn = false;
 let draft = null;
+let soundOn = false, seen = null;
 
 /* ---------- server ---------- */
 async function pull() {
   try {
-    const r = await fetch(API, { cache: "no-store" });
-    if (!r.ok) throw 0;
-    setState(await r.json());
-    $("#offline").hidden = true;
+    const r = await fetch(API, { cache: "no-store" }); if (!r.ok) throw 0;
+    setState(await r.json()); $("#offline").hidden = true;
   } catch (e) { $("#offline").hidden = false; }
 }
 async function act(a) {
   try {
     const r = await fetch(API, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(a) });
     if (!r.ok) throw 0;
-    setState(await r.json());
-    $("#offline").hidden = true;
-    return true;
-  } catch (e) { $("#offline").hidden = false; toast("Gönderilemedi, bağlantıyı kontrol edin"); return false; }
+    setState(await r.json()); $("#offline").hidden = true; return true;
+  } catch (e) { $("#offline").hidden = false; toast("Gönderilemedi. Bağlantıyı kontrol edin.", false); return false; }
 }
 function setState(ns) {
-  const prev = S;
   S = ns;
   const fresh = S.orders.filter(o => o.status === "new" && !o.paid);
-  if (seenOrders && fresh.some(o => !seenOrders.has(o.id))) { if (view === "tezgah") beep(); }
-  seenOrders = new Set(S.orders.map(o => o.id));
-  if (!prev || prev.v !== S.v) render(false);
-  else updateBadges();
+  if (seen && fresh.some(o => !seen.has(o.id)) && route().v === "panel") beep();
+  seen = new Set(S.orders.map(o => o.id));
+  if (S.v !== lastV) { lastV = S.v; render(); }
 }
-const menuItem = id => S.menu.find(m => m.id === id) || { n: id, p: 0 };
-const orderTotal = o => o.items.reduce((a, x) => a + menuItem(x.id).p * x.q, 0);
-const tableOrders = t => S.orders.filter(o => o.table === t && !o.paid);
-const tableBill = t => tableOrders(t).reduce((a, o) => a + orderTotal(o), 0);
-const ago = t => { const m = Math.max(0, Math.round(((S.now || Date.now()) - t) / 60000)); return m < 1 ? "şimdi" : m + " dk önce"; };
-
-/* ---------- local game per table ---------- */
-const gameKey = () => "m101.game." + ROOM + "." + tableNo;
-const getGame = () => ls.get(gameKey(), null);
-function setGame(g) { ls.set(gameKey(), g); pushGame(g); }
-function totals(g) { const t = g.players.map(() => 0); g.hands.forEach(h => h.forEach((v, i) => t[i] += v)); return t; }
+const item = id => S.menu.find(m => m.id === id) || { n: "Ürün", p: 0, c: 0 };
+const orderTotal = o => o.items.reduce((a, x) => a + item(x.id).p * x.q, 0);
+const tOrders = t => S.orders.filter(o => o.table === t && !o.paid);
+const tBill = t => tOrders(t).reduce((a, o) => a + orderTotal(o), 0);
+const ago = t => { const m = Math.max(0, Math.round(((S.now || Date.now()) - t) / 60000)); return m < 1 ? "şimdi" : m < 60 ? m + " dk önce" : Math.floor(m / 60) + " sa önce"; };
 function sides(g) {
-  const t = totals(g);
-  if (g.mode === "team") return [[0, 2], [1, 3]].map((tm, k) => ({ name: g.teamNames[k], members: tm.map(i => g.players[i]), total: tm[0] != null ? t[tm[0]] + t[tm[1]] : 0, color: COLORS[k], sub: tm.map(i => g.players[i] + " " + fmt(t[i])).join(" · ") }));
+  const t = g.players.map(() => 0); g.hands.forEach(h => h.forEach((v, i) => t[i] += v));
+  if (g.mode === "team") return [[0, 2], [1, 3]].map((tm, k) => ({ name: g.teamNames[k], members: tm.map(i => g.players[i]), total: t[tm[0]] + t[tm[1]], color: COLORS[k], sub: tm.map(i => `${g.players[i]} ${fmt(t[i])}`).join(" · ") }));
   return g.players.map((n, i) => ({ name: n, members: [n], total: t[i], color: COLORS[i], sub: "" }));
 }
-function pushGame(g) {
-  act({ type: "game", table: tableNo, game: g && g.hands.length ? { mode: g.mode, hands: g.hands.length, sides: sides(g).map(s => ({ name: s.name, total: s.total })) } : null });
-}
+const colorOf = (g, i) => g.mode === "team" ? COLORS[i % 2] : COLORS[i];
 
-/* ---------- render ---------- */
-function render(scrollTop) {
-  view = (location.hash.slice(1) || "masa");
-  if (!["masa", "tezgah", "salon"].includes(view)) view = "masa";
-  document.querySelectorAll(".views a").forEach(a => a.setAttribute("aria-current", a.dataset.v === view ? "page" : "false"));
-  updateBadges();
-  if (!S) { $("#app").innerHTML = `<div class="empty">Yükleniyor…</div>`; return; }
-  const focusId = document.activeElement && document.activeElement.id;
-  if (view === "masa") renderMasa(); else if (view === "tezgah") renderTezgah(); else renderSalon();
-  if (focusId && !$("#layer").innerHTML) { const el = document.getElementById(focusId); if (el && el.tagName === "INPUT") el.focus(); }
-  if (scrollTop) window.scrollTo(0, 0);
+/* ---------- routing ---------- */
+function route() {
+  const h = location.hash.slice(1);
+  if (h.startsWith("panel")) return { v: "panel", sub: h.split("-")[1] || "siparis" };
+  if (h === "musteri") return { v: "musteri" };
+  if (h === "tv") return { v: "tv" };
+  return { v: "start" };
 }
-function updateBadges() {
-  if (!S) return;
-  const n = S.orders.filter(o => o.status === "new" && !o.paid).length + S.calls.length;
-  const b = $("#bTez"); b.hidden = !n; b.textContent = n;
+function render(force) {
+  if (!S) { $("#root").innerHTML = `<div class="page gut"><p class="sub" style="margin-top:40vh;text-align:center">Yükleniyor…</p></div>`; return; }
+  const ae = document.activeElement;
+  if (!force && ae && ae.closest && ae.closest("#root") && /INPUT|TEXTAREA|SELECT/.test(ae.tagName)) { pendingRender = true; return; }
+  pendingRender = false;
+  const r = route();
+  document.body.style.background = r.v === "tv" ? "#000" : "";
+  if (r.v === "musteri") renderCustomer();
+  else if (r.v === "panel") renderPanel(r.sub);
+  else if (r.v === "tv") renderTV();
+  else renderStart();
+  if (draft && draft.kind === "hand") drawHand(false);
 }
+document.addEventListener("focusout", () => setTimeout(() => { if (pendingRender) render(); }, 50));
 
-/* ===== MASA ===== */
-function renderMasa() {
-  const g = getGame();
-  const myOrders = tableOrders(tableNo);
-  const bill = tableBill(tableNo);
-  const opts = Array.from({ length: S.tables }, (_, i) => `<option value="${i + 1}" ${i + 1 === tableNo ? "selected" : ""}>Masa ${i + 1}</option>`).join("");
-  $("#app").innerHTML = `
-    <div class="table-head">
-      <h1>Masa ${tableNo}</h1>
-      <label class="hint" style="margin:0">Bu cihaz: <select id="tableSel" aria-label="Masa seç">${opts}</select></label>
+/* ================= START (demo launcher) ================= */
+function link(hash, extra = {}) {
+  const p = new URLSearchParams({ k: ROOM, ...extra });
+  return location.origin + "/?" + p.toString() + hash;
+}
+function qrSvg(text) {
+  try { const q = qrcode(0, "M"); q.addData(text); q.make(); return q.createSvgTag({ cellSize: 4, margin: 2, scalable: true }); }
+  catch (e) { return `<div style="color:#000;font-size:12px;padding:8px">${esc(text)}</div>`; }
+}
+function renderStart() {
+  const url = link("#musteri", { masa: tableNo });
+  $("#root").innerHTML = `
+  <div class="page gut">
+    <p class="eyebrow" style="margin-top:28px">Demo</p>
+    <h1 class="large">Masa101</h1>
+    <p class="sub">Okey masası için QR menü, ortak skor ve “kaybeden öder” hesap. ${esc(S.cafe)} örneğiyle.</p>
+
+    <div class="sec">
+      <div class="hero-qr">
+        <div class="qr">${qrSvg(url)}</div>
+        <div>
+          <b style="font-size:20px">Telefonunuzla okutun</b>
+          <p class="sub" style="margin-top:6px">Masa ${tableNo}'a oturan müşteri gibi menüyü açın, sipariş verin, oyunu başlatın.</p>
+          <ol class="steps">
+            <li>Bu ekranı tablette açık tutun, aşağıdan <b>Kafe paneli</b>ne geçin.</li>
+            <li>Telefonla QR'ı okutup bir çay sipariş edin.</li>
+            <li>Sipariş tablete sesli düşer. Oyunu bitirince hesap kaybedene yazılır.</li>
+          </ol>
+        </div>
+      </div>
     </div>
-    <div class="tabs" role="tablist">
-      <button data-tab="skor" aria-pressed="${tab === "skor"}">Skor${g && g.hands.length ? `<span class="cnt">${g.hands.length}. el</span>` : ""}</button>
-      <button data-tab="siparis" aria-pressed="${tab === "siparis"}">Sipariş</button>
-      <button data-tab="hesap" aria-pressed="${tab === "hesap"}">Hesap${bill ? `<span class="cnt">${tl(bill)}</span>` : ""}</button>
+
+    <div class="sec">
+      <div class="sec-h"><span>Ekranlar</span></div>
+      <div class="group">
+        <a class="row tap ind" href="#musteri" style="color:inherit;text-decoration:none"><span class="icon-sq" style="background:var(--green)">${ic("phone")}</span><span class="grow"><span class="t">Müşteri ekranı</span><span class="d">Masadaki QR'ı okutan müşterinin telefonu</span></span><span class="chev">${ic("chev")}</span></a>
+        <a class="row tap ind" href="#panel" style="color:inherit;text-decoration:none"><span class="icon-sq" style="background:var(--tint)">${ic("ipad")}</span><span class="grow"><span class="t">Kafe paneli</span><span class="d">Tezgâhtaki tablet: siparişler, masalar, menü</span></span><span class="chev">${ic("chev")}</span></a>
+        <a class="row tap ind" href="#tv" style="color:inherit;text-decoration:none"><span class="icon-sq" style="background:#5856d6">${ic("tv")}</span><span class="grow"><span class="t">TV ekranı</span><span class="d">Duvardaki televizyon: canlı skorlar ve liderler</span></span><span class="chev">${ic("chev")}</span></a>
+      </div>
     </div>
-    <div id="tabBody"></div>`;
-  $("#tableSel").onchange = e => { tableNo = +e.target.value; ls.set("m101.table", tableNo); cart = {}; render(true); };
-  document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { tab = b.dataset.tab; render(false); });
-  if (tab === "skor") renderSkor(g); else if (tab === "siparis") renderSiparis(myOrders); else renderHesap(g, myOrders, bill);
-  renderMasaBottom();
+
+    <div class="sec">
+      <div class="sec-h"><span>Demo ayarları</span></div>
+      <div class="group">
+        <label class="row"><span class="grow">Bu cihazın masası</span>
+          <select class="inl" id="tSel" style="flex:none;width:auto">${Array.from({ length: S.tables }, (_, i) => `<option value="${i + 1}" ${i + 1 === tableNo ? "selected" : ""}>Masa ${i + 1}</option>`).join("")}</select></label>
+        <button class="row tap" id="resetBtn" style="color:var(--red)">Demoyu sıfırla</button>
+      </div>
+      <p class="sec-f">Kafeye özel demo için adresin sonuna ?k=kafeadi ekleyin. Her adres ayrı çalışır.</p>
+      <div id="resetBox"></div>
+    </div>
+  </div>`;
+  $("#tSel").onchange = e => { tableNo = +e.target.value; ls.set("m101.table", tableNo); cart = ls.get(cartKey(), {}); render(true); };
+  $("#resetBtn").onclick = () => confirmBox("#resetBox", "Tüm siparişler, oyunlar ve menü değişiklikleri silinip demo baştan kurulsun mu?", "Sıfırla", async () => { await act({ type: "reset" }); cart = {}; saveCart(); toast("Demo sıfırlandı"); });
 }
 
-function renderMasaBottom() {
-  const callG = S.calls.some(c => c.table === tableNo && c.kind === "garson");
-  const callH = S.calls.some(c => c.table === tableNo && c.kind === "hesap");
-  const items = Object.entries(cart).filter(([, q]) => q > 0);
-  const cartQ = items.reduce((a, [, q]) => a + q, 0);
-  const cartT = items.reduce((a, [id, q]) => a + menuItem(id).p * q, 0);
-  let html;
-  if (tab === "skor") {
-    const g = getGame();
-    html = g ? `<button class="primary wide" id="addHand">+ ${g.hands.length + 1}. eli yaz</button>` : "";
-  } else if (tab === "siparis" && cartQ) {
-    html = `<button class="primary wide" id="sendOrder"><span class="cartbar"><span>${cartQ} ürün · ${tl(cartT)}</span><span>Siparişi gönder →</span></span></button>`;
-  } else {
-    html = `<button class="ghost ${callG ? "on" : ""}" id="callG">${callG ? "Garson geliyor…" : "Garson çağır"}</button>
-            <button class="ghost ${callH ? "on" : ""}" id="callH">${callH ? "Hesap istendi" : "Hesap iste"}</button>`;
-  }
-  $("#bottom").innerHTML = html ? `<div class="bottombar"><div class="wrap gut">${html}</div></div>` : "";
-  const ah = $("#addHand"); if (ah) ah.onclick = () => openHand(null);
-  const so = $("#sendOrder"); if (so) so.onclick = async () => {
-    so.disabled = true;
-    const ok = await act({ type: "order", table: tableNo, items: items.map(([id, q]) => ({ id, q })) });
-    if (ok) { cart = {}; toast("Sipariş tezgâha gitti"); render(false); } else so.disabled = false;
+/* ================= CUSTOMER ================= */
+const cartKey = () => "m101.cart." + ROOM + "." + tableNo;
+const saveCart = () => ls.set(cartKey(), cart);
+function renderCustomer() {
+  const g = S.games[tableNo];
+  const bill = tBill(tableNo);
+  const myCount = tOrders(tableNo).filter(o => o.status !== "done").length;
+  const tabs = [["menu", "Menü", "menu", myCount], ["oyun", "Oyun", "game", 0], ["hesap", "Hesap", "bill", 0]];
+  let body = "";
+  if (custTab === "oyun") body = customerGame(g);
+  else if (custTab === "hesap") body = customerBill(g, bill);
+  else body = customerMenu();
+  $("#root").innerHTML = `
+    <div class="navbar"><div class="in gut"><span class="side"><a class="link" href="#">${ic("back")}Demo</a></span><span class="title">${esc(S.cafe)}</span><span class="side"><span class="pill p-blue">Masa ${tableNo}</span></span></div></div>
+    <div class="page gut">${body}</div>
+    <div id="fab"></div>
+    <nav class="tabbar"><div class="in">${tabs.map(([k, l, i, b]) => `<button data-ct="${k}" aria-current="${custTab === k ? "page" : "false"}">${ic(i)}${l}${b ? `<span class="badge">${b}</span>` : ""}</button>`).join("")}</div></nav>`;
+  $$("[data-ct]").forEach(b => b.onclick = () => { custTab = b.dataset.ct; ls.set("m101.ctab", custTab); render(true); window.scrollTo(0, 0); });
+  if (custTab === "menu") bindMenu(); else if (custTab === "oyun") bindGame(g); else bindBill(g, bill);
+}
+
+/* --- menu --- */
+function customerMenu() {
+  const q = query.trim().toLocaleLowerCase("tr");
+  const list = S.menu.filter(m => (cat < 0 || m.c === cat) && (!q || m.n.toLocaleLowerCase("tr").includes(q) || (m.d || "").toLocaleLowerCase("tr").includes(q)));
+  const pop = S.menu.filter(m => m.pop && m.on);
+  const rowFor = m => {
+    const n = cart[m.id] || 0;
+    return `<div class="row ${m.on ? "" : "soldout"}">
+      <span class="thumb k${m.c}">${ic(CAT_ICON[m.c] || "cup")}</span>
+      <span class="grow"><span class="t">${esc(m.n)}</span><span class="d">${m.on ? esc(m.d || "") : "Şu an yok"}</span><span class="price" style="display:block;margin-top:3px">${tl(m.p)}</span></span>
+      ${!m.on ? "" : n ? `<span class="stepper"><button data-dec="${m.id}" aria-label="Azalt">−</button><span>${n}</span><button data-inc="${m.id}" aria-label="Artır">+</button></span>` : `<button class="plus" data-inc="${m.id}" aria-label="${esc(m.n)} ekle">+</button>`}
+    </div>`;
   };
-  const cg = $("#callG"); if (cg) cg.onclick = () => { if (!callG) act({ type: "call", table: tableNo, kind: "garson" }).then(ok => ok && toast("Garson çağrıldı")); };
-  const ch = $("#callH"); if (ch) ch.onclick = () => { if (!callH) act({ type: "call", table: tableNo, kind: "hesap" }).then(ok => ok && toast("Hesap istendi")); };
+  const groups = (cat < 0 ? S.cats.map((_, i) => i) : [cat]).map(c => {
+    const items = list.filter(m => m.c === c);
+    return items.length ? `<div class="sec"><div class="sec-h"><span>${esc(S.cats[c])}</span></div><div class="group">${items.map(rowFor).join("")}</div></div>` : "";
+  }).join("");
+  const mine = tOrders(tableNo).slice().reverse();
+  const st = { new: ["Alındı", "p-blue"], prep: ["Hazırlanıyor", "p-orange"], done: ["Masada", "p-green"] };
+  return `
+    <h1 class="large">Menü</h1>
+    <label class="search">${ic("search")}<input id="q" type="search" placeholder="Ara" value="${esc(query)}" autocomplete="off"></label>
+    <div class="chips"><button class="chip" data-cat="-1" aria-pressed="${cat < 0}">Tümü</button>${S.cats.map((c, i) => `<button class="chip" data-cat="${i}" aria-pressed="${cat === i}">${esc(c)}</button>`).join("")}</div>
+    ${!q && cat < 0 && pop.length ? `<div class="sec"><div class="sec-h"><span>Çok sipariş edilenler</span></div><div class="pop">${pop.map(m => `
+      <div class="pcard"><span class="thumb k${m.c}">${ic(CAT_ICON[m.c])}</span><span><b>${esc(m.n)}</b><br><small style="color:var(--label-2)">${esc(m.d || "")}</small></span>
+      <span class="bot"><span class="price">${tl(m.p)}</span><button class="plus" data-inc="${m.id}" aria-label="${esc(m.n)} ekle">+</button></span></div>`).join("")}</div></div>` : ""}
+    ${groups || `<div class="sec"><div class="empty-state"><b>Sonuç yok</b>Başka bir kelime deneyin.</div></div>`}
+    ${mine.length ? `<div class="sec"><div class="sec-h"><span>Siparişleriniz</span></div><div class="group">${mine.map(o => `
+      <div class="row"><span class="grow"><span class="t">${o.items.map(x => `${x.q}× ${esc(item(x.id).n)}`).join(", ")}</span><span class="d">${ago(o.t)} · ${tl(orderTotal(o))}</span></span><span class="pill ${st[o.status][1]}">${st[o.status][0]}</span></div>`).join("")}</div></div>` : ""}`;
+}
+function bindMenu() {
+  const qi = $("#q");
+  qi.oninput = () => { query = qi.value; const pos = qi.selectionStart; render(true); const n = $("#q"); n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) {} };
+  $$("[data-cat]").forEach(b => b.onclick = () => { cat = +b.dataset.cat; render(true); });
+  $$("[data-inc]").forEach(b => b.onclick = () => { cart[b.dataset.inc] = (cart[b.dataset.inc] || 0) + 1; saveCart(); render(true); });
+  $$("[data-dec]").forEach(b => b.onclick = () => { cart[b.dataset.dec] = Math.max(0, (cart[b.dataset.dec] || 0) - 1); if (!cart[b.dataset.dec]) delete cart[b.dataset.dec]; saveCart(); render(true); });
+  const lines = Object.entries(cart).filter(([id, q]) => q > 0 && S.menu.some(m => m.id === id && m.on));
+  const n = lines.reduce((a, [, q]) => a + q, 0), sum = lines.reduce((a, [id, q]) => a + item(id).p * q, 0);
+  $("#fab").innerHTML = n ? `<div class="fab"><div class="in gut"><button class="btn fill" id="openCart"><span>Sepet · ${n} ürün</span><span>${tl(sum)}</span></button></div></div>` : "";
+  const oc = $("#openCart"); if (oc) oc.onclick = openCart;
+}
+function openCart() {
+  const draw = (anim) => {
+    const lines = Object.entries(cart).filter(([id, q]) => q > 0 && S.menu.some(m => m.id === id && m.on));
+    const sum = lines.reduce((a, [id, q]) => a + item(id).p * q, 0);
+    if (!lines.length) { closeLayer(); render(true); return; }
+    const note = $("#cNote") ? $("#cNote").value : (draft && draft.note) || "";
+    draft = { kind: "cart", note };
+    $("#layer").innerHTML = `<div class="scrim" id="scrim"></div>
+      <div class="sheet ${anim ? "anim" : ""}" role="dialog" aria-label="Sepet"><div class="in gut">
+        <div class="grabber"></div>
+        <div class="sheet-nav"><button class="link" id="sClose">Kapat</button><b>Sepet · Masa ${tableNo}</b><span style="width:52px"></span></div>
+        <div class="group" style="margin-top:8px">${lines.map(([id, q]) => `<div class="row"><span class="thumb k${item(id).c}" style="width:36px;height:36px">${ic(CAT_ICON[item(id).c])}</span><span class="grow"><span class="t">${esc(item(id).n)}</span><span class="d">${tl(item(id).p * q)}</span></span><span class="stepper"><button data-cd="${id}" aria-label="Azalt">−</button><span>${q}</span><button data-ci="${id}" aria-label="Artır">+</button></span></div>`).join("")}
+          <label class="row"><textarea class="inl" id="cNote" rows="1" maxlength="120" placeholder="Not ekle (ör. çay açık olsun)">${esc(note)}</textarea></label>
+          <div class="row"><span class="grow"><b>Toplam</b></span><b class="num" style="font-size:20px">${tl(sum)}</b></div>
+        </div>
+        <p class="sec-f">Sipariş doğrudan tezgâha gider. Ödeme hesap sekmesinden, masada.</p>
+        <button class="btn fill block" id="send" style="margin-top:16px">Siparişi Gönder</button>
+      </div></div>`;
+    $("#scrim").onclick = $("#sClose").onclick = () => { closeLayer(); render(true); };
+    $$("[data-ci]").forEach(b => b.onclick = () => { cart[b.dataset.ci]++; saveCart(); draw(false); });
+    $$("[data-cd]").forEach(b => b.onclick = () => { cart[b.dataset.cd]--; if (cart[b.dataset.cd] <= 0) delete cart[b.dataset.cd]; saveCart(); draw(false); });
+    $("#send").onclick = async () => {
+      $("#send").disabled = true;
+      const ok = await act({ type: "order", table: tableNo, items: lines.map(([id, q]) => ({ id, q })), note: $("#cNote").value });
+      if (ok) { cart = {}; saveCart(); closeLayer(); render(true); toast("Siparişiniz tezgâha iletildi"); }
+      else $("#send").disabled = false;
+    };
+  };
+  draw(true);
 }
 
-/* --- skor --- */
-function renderSkor(g) {
+/* --- game (shared per table on the server) --- */
+function customerGame(g) {
   if (!g) {
-    const st = ls.get("m101.setup", { mode: "team", names: ["", "", "", ""], teamNames: ["Kırmızılar", "Maviler"], count: 4 });
-    const field = (i, c) => `<label class="field card ${c}"><span class="dot"></span><input id="n${i}" value="${esc(st.names[i])}" placeholder="Oyuncu ${i + 1}" maxlength="16" autocomplete="off"></label>`;
-    const players = st.mode === "team"
-      ? `<div class="setup-grid">${[0, 1].map(k => `<div class="${COLORS[k]}"><p class="team-lbl"><input id="tn${k}" value="${esc(st.teamNames[k])}" maxlength="16" aria-label="Takım adı" style="border:0;background:transparent;font:inherit;color:inherit;outline:none;width:100%"></p>${field(k, COLORS[k])}${field(k + 2, COLORS[k])}</div>`).join("")}</div>`
-      : `<div class="seg" id="cntSeg" style="margin-bottom:10px">${[2, 3, 4].map(c => `<button data-c="${c}" aria-pressed="${st.count === c}">${c} kişi</button>`).join("")}</div>
-         <div class="setup-grid">${Array.from({ length: st.count }, (_, i) => field(i, COLORS[i])).join("")}</div>`;
-    $("#tabBody").innerHTML = `
-      <h2>Yeni oyun</h2>
-      <div class="seg" id="modeSeg"><button data-m="team" aria-pressed="${st.mode === "team"}">Eşli</button><button data-m="single" aria-pressed="${st.mode === "single"}">Tekli</button></div>
-      <h2>${st.mode === "team" ? "Takımlar" : "Oyuncular"}</h2>
-      ${players}
-      <div style="margin-top:18px"><button class="primary" id="startGame" style="width:100%">Oyunu başlat</button></div>
-      <p class="hint">Oyun bitince kaybeden taraf masanın hesabını öder.</p>`;
-    const read = () => {
-      const s = ls.get("m101.setup", st);
-      for (let i = 0; i < 4; i++) { const el = $("#n" + i); if (el) s.names[i] = el.value.trim(); }
-      [0, 1].forEach(k => { const el = $("#tn" + k); if (el) s.teamNames[k] = el.value.trim() || s.teamNames[k]; });
-      ls.set("m101.setup", s); return s;
-    };
-    document.querySelectorAll("#tabBody input").forEach(el => el.oninput = read);
-    $("#modeSeg").onclick = e => { const b = e.target.closest("button"); if (!b) return; const s = read(); s.mode = b.dataset.m; ls.set("m101.setup", s); render(false); };
-    const cs = $("#cntSeg"); if (cs) cs.onclick = e => { const b = e.target.closest("button"); if (!b) return; const s = read(); s.count = +b.dataset.c; ls.set("m101.setup", s); render(false); };
-    $("#startGame").onclick = () => {
-      const s = read(); const n = s.mode === "team" ? 4 : s.count;
-      setGame({ mode: s.mode, players: Array.from({ length: n }, (_, i) => s.names[i] || "Oyuncu " + (i + 1)), teamNames: [...s.teamNames], hands: [] });
-      render(false);
-    };
-    return;
+    const st = ls.get("m101.setup", { mode: "team", count: 4, names: ["", "", "", ""], teamNames: ["Kırmızılar", "Maviler"] });
+    const n = st.mode === "team" ? 4 : st.count;
+    const nameRow = i => `<label class="row"><span class="dot ${st.mode === "team" ? COLORS[i % 2] : COLORS[i]}"></span><input class="inl" style="text-align:left;color:var(--label)" id="n${i}" value="${esc(st.names[i])}" placeholder="Oyuncu ${i + 1}" maxlength="16" autocomplete="off"></label>`;
+    return `
+      <h1 class="large">Oyun</h1>
+      <p class="sub">Masadaki herkes kendi telefonundan aynı tabloyu görür. Biri puanı yazınca herkeste güncellenir.</p>
+      <div class="sec"><div class="seg" id="mSeg"><button data-m="team" aria-pressed="${st.mode === "team"}">Eşli</button><button data-m="single" aria-pressed="${st.mode === "single"}">Tekli</button></div>
+      ${st.mode === "single" ? `<div class="seg" id="cSeg" style="margin-top:10px">${[2, 3, 4].map(c => `<button data-c="${c}" aria-pressed="${st.count === c}">${c} kişi</button>`).join("")}</div>` : ""}</div>
+      ${st.mode === "team"
+        ? [0, 1].map(k => `<div class="sec"><div class="sec-h"><span>${k ? "2. takım" : "1. takım"}</span></div><div class="group">
+            <label class="row"><span class="grow">Takım adı</span><input class="inl" id="tn${k}" value="${esc(st.teamNames[k])}" maxlength="16"></label>
+            ${nameRow(k)}${nameRow(k + 2)}</div></div>`).join("") + `<p class="sec-f">Karşılıklı oturanlar eş olur.</p>`
+        : `<div class="sec"><div class="sec-h"><span>Oyuncular</span></div><div class="group">${Array.from({ length: n }, (_, i) => nameRow(i)).join("")}</div></div>`}
+      <div class="sec"><button class="btn fill block" id="start">Oyunu Başlat</button></div>`;
   }
   const sd = sides(g).sort((a, b) => a.total - b.total);
   const has = g.hands.length > 0;
   const best = sd[0].total, worst = sd[sd.length - 1].total;
-  const stand = sd.map((s, r) => `<div class="card stand ${s.color} ${has && s.total === best ? "lead" : ""}">
-      <span class="tile">${r + 1}</span>
-      <div style="min-width:0"><b>${esc(s.name)}${has && s.total === best ? `<span class="pill">Önde</span>` : ""}${has && s.total === worst && sd.length > 1 ? `<span class="pill pay">Öder</span>` : ""}</b>${s.sub ? `<small>${esc(s.sub)}</small>` : ""}</div>
-      <span class="total">${fmt(s.total)}</span></div>`).join("");
-  const t = totals(g);
   let head, rows, foot;
+  const t = g.players.map(() => 0); g.hands.forEach(h => h.forEach((v, i) => t[i] += v));
   if (g.mode === "team") {
     const T = [[0, 2], [1, 3]];
-    head = `<th class="n">El</th>` + T.map((tm, k) => `<th>${esc(g.teamNames[k])}</th>`).join("");
-    rows = g.hands.map((h, hi) => `<tr data-h="${hi}"><td class="n">${hi + 1}</td>${T.map(tm => `<td class="${tm.some(i => h[i] < 0) ? "fin" : ""}">${fmt(h[tm[0]] + h[tm[1]])}<small>${tm.map(i => fmt(h[i])).join(" · ")}</small></td>`).join("")}</tr>`).join("");
-    foot = `<td class="n">Σ</td>` + T.map(tm => `<td>${fmt(t[tm[0]] + t[tm[1]])}</td>`).join("");
+    head = `<th>El</th>` + T.map((tm, k) => `<th><span class="dot ${COLORS[k]}" style="display:inline-block;margin-right:5px"></span>${esc(g.teamNames[k])}</th>`).join("");
+    rows = g.hands.map((h, hi) => `<tr data-h="${hi}"><td>${hi + 1}.</td>${T.map(tm => `<td class="${tm.some(i => h[i] < 0) ? "neg" : ""}">${fmt(h[tm[0]] + h[tm[1]])}<small>${tm.map(i => fmt(h[i])).join(" · ")}</small></td>`).join("")}</tr>`).join("");
+    foot = `<td>Toplam</td>` + T.map(tm => `<td>${fmt(t[tm[0]] + t[tm[1]])}</td>`).join("");
   } else {
-    head = `<th class="n">El</th>` + g.players.map(p => `<th>${esc(p)}</th>`).join("");
-    rows = g.hands.map((h, hi) => `<tr data-h="${hi}"><td class="n">${hi + 1}</td>${h.map(v => `<td class="${v < 0 ? "fin" : ""}">${fmt(v)}</td>`).join("")}</tr>`).join("");
-    foot = `<td class="n">Σ</td>` + t.map(v => `<td>${fmt(v)}</td>`).join("");
+    head = `<th>El</th>` + g.players.map((p, i) => `<th>${esc(p)}</th>`).join("");
+    rows = g.hands.map((h, hi) => `<tr data-h="${hi}"><td>${hi + 1}.</td>${h.map(v => `<td class="${v < 0 ? "neg" : ""}">${fmt(v)}</td>`).join("")}</tr>`).join("");
+    foot = `<td>Toplam</td>` + t.map(v => `<td>${fmt(v)}</td>`).join("");
   }
-  $("#tabBody").innerHTML = `
-    <h2>Durum</h2>${stand}
-    <h2>Eller</h2>
-    <div class="card ledger">${has ? `<table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody><tfoot><tr>${foot}</tr></tfoot></table>` : `<div class="empty">El bitince aşağıdan puanları yazın.</div>`}</div>
-    ${has ? `<p class="hint">Düzeltmek için ele dokunun.</p>` : ""}
-    <div style="margin-top:14px"><button class="ghost" id="endGame">Oyunu sıfırla</button><div id="endBox"></div></div>`;
-  document.querySelectorAll("tbody tr").forEach(tr => tr.onclick = () => openHand(+tr.dataset.h));
-  $("#endGame").onclick = () => {
-    $("#endBox").innerHTML = `<div class="confirm"><p>Skorlar silinsin mi? Hesap etkilenmez.</p><button class="ghost" id="eNo">Vazgeç</button><button class="ghost danger" id="eYes">Sil</button></div>`;
-    $("#eNo").onclick = () => $("#endBox").innerHTML = "";
-    $("#eYes").onclick = () => { ls.set(gameKey(), null); pushGame(null); render(false); };
-  };
+  return `
+    <h1 class="large">Oyun</h1>
+    <p class="sub">${g.mode === "team" ? "Eşli" : "Tekli"} · ${g.hands.length} el oynandı</p>
+    <div class="sec"><div class="group">${sd.map((s, r) => `
+      <div class="row"><span class="rank ${has && r === 0 ? "first" : ""}">${r + 1}</span>
+        <span class="grow"><span class="t" style="font-weight:600">${esc(s.name)} ${has && s.total === best ? `<span class="pill p-green">Önde</span>` : ""} ${has && s.total === worst && sd.length > 1 ? `<span class="pill p-orange">Hesap</span>` : ""}</span>${s.sub ? `<span class="d">${esc(s.sub)}</span>` : ""}</span>
+        <span class="score ${s.total < 0 ? "neg" : ""}">${fmt(s.total)}</span></div>`).join("")}</div>
+      ${has ? `<p class="sec-f">En yüksek puan masanın hesabını öder.</p>` : ""}</div>
+    <div class="sec"><div class="sec-h"><span>Eller</span>${has ? "<span>Düzeltmek için dokunun</span>" : ""}</div>
+      <div class="group">${has ? `<table class="ledger"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody><tfoot><tr>${foot}</tr></tfoot></table>` : `<div class="empty-state" style="border-radius:0"><b>İlk el bekleniyor</b>El bitince aşağıdan puanları yazın.</div>`}</div></div>
+    <div class="sec"><div class="group"><button class="row tap" id="endGame" style="color:var(--red)">Oyunu bitir</button></div><div id="endBox"></div></div>`;
 }
-
-function openHand(idx) {
-  const g = getGame();
-  draft = { idx, v: idx == null ? g.players.map(() => "") : g.hands[idx].map(String), fresh: true };
-  drawHand();
-  draft.fresh = false;
-  const first = [...document.querySelectorAll(".sheet input")].find(x => x.value === "") || $(".sheet input");
-  if (first) first.focus();
+function bindGame(g) {
+  if (!g) {
+    const st = ls.get("m101.setup", { mode: "team", count: 4, names: ["", "", "", ""], teamNames: ["Kırmızılar", "Maviler"] });
+    const read = () => { for (let i = 0; i < 4; i++) { const el = $("#n" + i); if (el) st.names[i] = el.value.trim(); } [0, 1].forEach(k => { const el = $("#tn" + k); if (el) st.teamNames[k] = el.value.trim() || st.teamNames[k]; }); ls.set("m101.setup", st); };
+    $$("#root input").forEach(el => el.oninput = read);
+    $("#mSeg").onclick = e => { const b = e.target.closest("button"); if (!b) return; read(); st.mode = b.dataset.m; ls.set("m101.setup", st); render(true); };
+    const cs = $("#cSeg"); if (cs) cs.onclick = e => { const b = e.target.closest("button"); if (!b) return; read(); st.count = +b.dataset.c; ls.set("m101.setup", st); render(true); };
+    $("#start").onclick = () => { read(); act({ type: "gameStart", table: tableNo, mode: st.mode, count: st.count, players: st.names, teamNames: st.teamNames }); };
+    $("#fab").innerHTML = "";
+    return;
+  }
+  $$("tbody tr").forEach(tr => tr.onclick = () => openHand(+tr.dataset.h));
+  $("#fab").innerHTML = `<div class="fab"><div class="in gut"><button class="btn fill" id="addHand" style="justify-content:center">${g.hands.length + 1}. Eli Yaz</button></div></div>`;
+  $("#addHand").onclick = () => openHand(null);
+  $("#endGame").onclick = () => confirmBox("#endBox", "Oyun bitsin mi? Kazanan liderlik tablosuna yazılır. Masanın hesabı açık kalır.", "Bitir", () => act({ type: "gameEnd", table: tableNo }).then(ok => ok && toast("Oyun bitti, sonuç kaydedildi")));
 }
 const parse = s => { const n = parseInt(String(s).replace(/[^0-9-]/g, "")); return isNaN(n) ? 0 : n; };
-function drawHand() {
-  const g = getGame();
+function openHand(idx) {
+  const g = S.games[tableNo]; if (!g) return;
+  draft = { kind: "hand", idx, v: idx == null ? g.players.map(() => "") : g.hands[idx].map(String) };
+  drawHand(true);
+  const first = $$(".sheet input").find(x => x.value === "") || $(".sheet input");
+  if (first) first.focus();
+}
+function drawHand(anim) {
+  const g = S.games[tableNo];
+  if (!g || (draft.idx != null && !g.hands[draft.idx])) { closeLayer(); return; }
+  if (!anim && $(".sheet")) return; // keep the open sheet (and the keyboard) while others update the table
   const order = g.mode === "team" ? [0, 2, 1, 3] : g.players.map((_, i) => i);
   const before = g.players.map(() => 0);
   g.hands.slice(0, draft.idx == null ? g.hands.length : draft.idx).forEach(h => h.forEach((v, i) => before[i] += v));
-  const col = i => g.mode === "team" ? COLORS[i % 2] : COLORS[i];
   const no = draft.idx == null ? g.hands.length + 1 : draft.idx + 1;
   $("#layer").innerHTML = `<div class="scrim" id="scrim"></div>
-    <div class="sheet" role="dialog" aria-label="El girişi"><div class="wrap gut">
-      <div class="grab"></div>
-      <div class="sheet-head"><h3>${no}. el</h3><button class="ghost" id="hClose">Kapat</button></div>
-      <p class="hint">Puanı yazın, Enter ile sıradakine geçin. Biten için önce − tuşu.</p>
-      <div style="margin-top:10px">${order.map((i, k) => {
+    <div class="sheet anim" role="dialog" aria-label="El girişi"><div class="in gut">
+      <div class="grabber"></div>
+      <div class="sheet-nav"><button class="link" id="hClose">Vazgeç</button><b>${no}. El</b><button class="link" id="hSave2" style="font-weight:600">Kaydet</button></div>
+      <p class="sec-f" style="margin:4px 4px 12px">Puanı yazın, klavyede İleri ile sıradakine geçin. Biten için önce − tuşu.</p>
+      ${order.map((i, k) => {
         const v = String(draft.v[i]); const neg = v.startsWith("-");
-        return `<div class="card prow ${col(i)} ${neg ? "neg" : ""}" id="row${i}">
-          <div class="prow-top">
-            <span class="name">${esc(g.players[i])}<span class="runtot" id="rt${i}">Toplam ${fmt(before[i] + parse(v))}</span></span>
+        return `<div class="hrow ${neg ? "neg" : ""}" id="row${i}">
+          <div class="top"><span class="nm"><span class="dot ${colorOf(g, i)}"></span><span>${esc(g.players[i])}<small id="rt${i}">Toplam ${fmt(before[i] + parse(v))}</small></span></span>
             <button class="sign" data-sign="${i}" aria-pressed="${neg}" aria-label="Eksi">−</button>
-            <input id="hv${i}" data-i="${i}" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="${k === order.length - 1 ? "done" : "next"}" placeholder="0" value="${esc(v.replace("-", ""))}">
-          </div>
-          <div class="opts">
-            <button class="opt" data-q="${i}" data-val="-101">−101</button><button class="opt" data-q="${i}" data-val="-202">−202</button>
-            <button class="opt" data-q="${i}" data-val="202">202</button><button class="opt" data-add="${i}">+101 ceza</button>
-          </div></div>`;
-      }).join("")}</div>
-      <div id="hConfirm"></div>
-      <div style="display:grid;grid-template-columns:auto 1fr;gap:8px;margin-top:14px">
-        ${draft.idx != null ? `<button class="ghost danger" id="hDel">Sil</button>` : `<span></span>`}
-        <button class="primary" id="hSave">Eli kaydet</button>
+            <input id="hv${i}" data-i="${i}" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="${k === order.length - 1 ? "done" : "next"}" placeholder="0" value="${esc(v.replace("-", ""))}"></div>
+          <div class="qk"><button data-q="${i}" data-val="-101">−101</button><button data-q="${i}" data-val="-202">−202</button><button data-q="${i}" data-val="202">202</button><button data-add="${i}">+101 ceza</button></div>
+        </div>`;
+      }).join("")}
+      <div id="hConf"></div>
+      <div style="display:grid;grid-template-columns:${draft.idx != null ? "auto 1fr" : "1fr"};gap:10px;margin-top:16px">
+        ${draft.idx != null ? `<button class="btn red" id="hDel">Sil</button>` : ""}
+        <button class="btn fill" id="hSave">Eli Kaydet</button>
       </div>
     </div></div>`;
-  const update = i => {
+  const upd = i => {
     const neg = $(`[data-sign="${i}"]`).getAttribute("aria-pressed") === "true";
     const d = $("#hv" + i).value.replace(/[^0-9]/g, "");
     draft.v[i] = d === "" ? "" : (neg ? "-" : "") + d;
@@ -476,205 +642,275 @@ function drawHand() {
   const inputs = order.map(i => $("#hv" + i));
   inputs.forEach((inp, k) => {
     inp.onfocus = () => inp.select();
-    inp.oninput = () => { if (inp.value.includes("-")) $(`[data-sign="${inp.dataset.i}"]`).setAttribute("aria-pressed", "true"); inp.value = inp.value.replace(/[^0-9]/g, ""); update(+inp.dataset.i); };
-    inp.onkeydown = e => { if (e.key !== "Enter") return; e.preventDefault(); if (k < inputs.length - 1) inputs[k + 1].focus(); else $("#hSave").click(); };
+    inp.oninput = () => { if (inp.value.includes("-")) $(`[data-sign="${inp.dataset.i}"]`).setAttribute("aria-pressed", "true"); inp.value = inp.value.replace(/[^0-9]/g, ""); upd(+inp.dataset.i); };
+    inp.onkeydown = e => { if (e.key !== "Enter") return; e.preventDefault(); if (k < inputs.length - 1) inputs[k + 1].focus(); else save(); };
   });
-  document.querySelectorAll("[data-sign]").forEach(b => b.onclick = () => { b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") !== "true"); update(+b.dataset.sign); $("#hv" + b.dataset.sign).focus(); });
-  const setVal = (i, val) => {
-    const n = parse(val); $("#hv" + i).value = Math.abs(n) || ""; $(`[data-sign="${i}"]`).setAttribute("aria-pressed", n < 0); update(i);
-    const k = order.indexOf(i); if (k < order.length - 1) inputs[k + 1].focus();
+  $$("[data-sign]").forEach(b => b.onclick = () => { b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") !== "true"); upd(+b.dataset.sign); $("#hv" + b.dataset.sign).focus(); });
+  const setVal = (i, val) => { const n = parse(val); $("#hv" + i).value = Math.abs(n) || ""; $(`[data-sign="${i}"]`).setAttribute("aria-pressed", n < 0); upd(i); const k = order.indexOf(i); if (k < order.length - 1) inputs[k + 1].focus(); };
+  $$("[data-q]").forEach(b => b.onclick = () => setVal(+b.dataset.q, b.dataset.val));
+  $$("[data-add]").forEach(b => b.onclick = () => { const i = +b.dataset.add; setVal(i, String(parse(draft.v[i]) + 101)); });
+  const save = async () => {
+    const d = draft; const ok = await act({ type: "hand", table: tableNo, idx: d.idx, s: d.v.map(parse) });
+    if (ok) { closeLayer(); render(true); }
   };
-  document.querySelectorAll("[data-q]").forEach(b => b.onclick = () => setVal(+b.dataset.q, b.dataset.val));
-  document.querySelectorAll("[data-add]").forEach(b => b.onclick = () => { const i = +b.dataset.add; setVal(i, String(parse(draft.v[i]) + 101)); });
-  $("#scrim").onclick = $("#hClose").onclick = closeLayer;
-  const del = $("#hDel"); if (del) del.onclick = () => {
-    $("#hConfirm").innerHTML = `<div class="confirm"><p>${no}. el silinsin mi?</p><button class="ghost" id="dNo">Vazgeç</button><button class="ghost danger" id="dYes">Sil</button></div>`;
-    $("#dNo").onclick = () => $("#hConfirm").innerHTML = "";
-    $("#dYes").onclick = () => { g.hands.splice(draft.idx, 1); setGame(g); closeLayer(); render(false); };
-  };
-  $("#hSave").onclick = () => {
-    const h = draft.v.map(parse);
-    if (draft.idx == null) g.hands.push(h); else g.hands[draft.idx] = h;
-    setGame(g); closeLayer(); render(false);
-  };
-}
-function closeLayer() { $("#layer").innerHTML = ""; draft = null; }
-
-/* --- sipariş --- */
-function renderSiparis(myOrders) {
-  const cats = [...new Set(S.menu.map(m => m.c))];
-  if (!cat || !cats.includes(cat)) cat = cats[0];
-  const items = S.menu.filter(m => m.c === cat);
-  const st = { new: ["Alındı", "st-new"], prep: ["Hazırlanıyor", "st-prep"], done: ["Geldi", "st-done"] };
-  $("#tabBody").innerHTML = `
-    <h2>Menü</h2>
-    <div class="cats">${cats.map(c => `<button class="chip" data-cat="${esc(c)}" aria-pressed="${c === cat}">${esc(c)}</button>`).join("")}</div>
-    <div class="menu">${items.map(m => {
-      const q = cart[m.id] || 0;
-      return `<div class="card item ${q ? "in" : ""}"><b>${esc(m.n)}</b><div class="row"><span class="price">${tl(m.p)}</span>
-        ${q ? `<span class="qty"><button data-dec="${m.id}" aria-label="Azalt">−</button><span>${q}</span><button data-inc="${m.id}" aria-label="Artır">+</button></span>` : `<button class="add" data-inc="${m.id}">Ekle</button>`}
-      </div></div>`;
-    }).join("")}</div>
-    ${myOrders.length ? `<h2>Siparişleriniz</h2><div class="my-orders">${myOrders.slice().reverse().map(o => `
-      <div class="card ord-line"><div class="what">${o.items.map(x => `${x.q}× ${esc(menuItem(x.id).n)}`).join(", ")}<small>${ago(o.t)} · ${tl(orderTotal(o))}</small></div>
-      <span class="status ${st[o.status][1]}">${st[o.status][0]}</span></div>`).join("")}</div>` : ""}`;
-  document.querySelectorAll("[data-cat]").forEach(b => b.onclick = () => { cat = b.dataset.cat; render(false); });
-  document.querySelectorAll("[data-inc]").forEach(b => b.onclick = () => { cart[b.dataset.inc] = (cart[b.dataset.inc] || 0) + 1; render(false); });
-  document.querySelectorAll("[data-dec]").forEach(b => b.onclick = () => { cart[b.dataset.dec] = Math.max(0, (cart[b.dataset.dec] || 0) - 1); render(false); });
+  $("#hSave").onclick = $("#hSave2").onclick = save;
+  $("#scrim").onclick = $("#hClose").onclick = () => { closeLayer(); render(true); };
+  const del = $("#hDel"); if (del) del.onclick = () => confirmBox("#hConf", `${no}. el silinsin mi?`, "Sil", async () => { const d = draft; if (await act({ type: "handDel", table: tableNo, idx: d.idx })) { closeLayer(); render(true); } });
 }
 
-/* --- hesap --- */
+/* --- bill --- */
 function billLines(orders) {
-  const m = {};
-  orders.forEach(o => o.items.forEach(x => { m[x.id] = (m[x.id] || 0) + x.q; }));
-  return Object.entries(m).map(([id, q]) => ({ n: menuItem(id).n, q, sum: menuItem(id).p * q }));
+  const m = {}; orders.forEach(o => o.items.forEach(x => { m[x.id] = (m[x.id] || 0) + x.q; }));
+  return Object.entries(m).map(([id, q]) => ({ id, n: item(id).n, q, sum: item(id).p * q }));
 }
-function payerBlock(game, bill, mode) {
-  if (!game || !game.hands || !game.sides || game.sides.length < 2) return "";
-  const sd = game.sides.slice().sort((a, b) => b.total - a.total);
-  const loser = sd[0];
-  const membersOf = s => s.members || [s.name];
-  const people = game.sides.flatMap(membersOf);
-  const lm = membersOf(loser);
-  return `<div class="card payer">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
-      <span class="hint" style="margin:0">${game.hands}. el sonunda</span>
-      <div class="seg" id="payMode"><button data-p="loser" aria-pressed="${mode === "loser"}">Kaybeden öder</button><button data-p="split" aria-pressed="${mode === "split"}">Eşit böl</button></div>
-    </div>
+function payerCard(g, bill, mode, withSeg) {
+  if (!g || !g.hands.length || !bill) return "";
+  const sd = sides(g).sort((a, b) => b.total - a.total);
+  const loser = sd[0]; const people = sides(g).flatMap(s => s.members);
+  const per = n => tl(Math.ceil(bill / n));
+  return `<div class="sec"><div class="payer">
+    ${withSeg ? `<div class="seg" id="payMode"><button data-p="loser" aria-pressed="${mode === "loser"}">Kaybeden öder</button><button data-p="split" aria-pressed="${mode === "split"}">Eşit böl</button></div>` : ""}
     ${mode === "loser"
-      ? `<div class="big">${esc(loser.name)} öder: ${tl(bill)}</div>
-         ${lm.length > 1 ? `<div class="split">${lm.map(n => `<div><span>${esc(n)}</span><span class="money">${tl(Math.round(bill / lm.length))}</span></div>`).join("")}</div>` : ""}`
-      : `<div class="split">${people.map(n => `<div><span>${esc(n)}</span><span class="money">${tl(Math.round(bill / people.length))}</span></div>`).join("")}</div>`}
-  </div>`;
+      ? `<div><span class="eyebrow">${g.hands.length}. el sonunda</span><div class="big">${esc(loser.name)} öder</div></div>
+         <div class="who">${loser.members.map(n => `<div><span>${esc(n)}</span><b>${per(loser.members.length)}</b></div>`).join("")}</div>`
+      : `<div class="who">${people.map(n => `<div><span>${esc(n)}</span><b>${per(people.length)}</b></div>`).join("")}</div>`}
+  </div></div>`;
 }
-function renderHesap(g, myOrders, bill) {
-  const lines = billLines(myOrders);
-  const game = g && g.hands.length ? { hands: g.hands.length, sides: sides(g) } : null;
-  $("#tabBody").innerHTML = `
-    <h2>Adisyon</h2>
-    <div class="card">
-      ${lines.length ? `<div class="bill-lines">${lines.map(l => `<div class="bill-line"><span>${l.q}× ${esc(l.n)}</span><span class="money">${tl(l.sum)}</span></div>`).join("")}</div>` : `<div class="empty">Henüz sipariş yok.</div>`}
-      <div class="bill-total"><span>Toplam</span><span class="money">${tl(bill)}</span></div>
-    </div>
-    ${bill ? payerBlock(game, bill, payMode) : ""}
-    ${bill ? `<div style="margin-top:14px"><button class="ghost" id="closeBill">Hesabı kapat</button><div id="closeBox"></div></div>` : ""}`;
-  const pm = $("#payMode"); if (pm) pm.onclick = e => { const b = e.target.closest("button"); if (!b) return; payMode = b.dataset.p; render(false); };
-  const cb = $("#closeBill"); if (cb) cb.onclick = () => confirmClose(tableNo, "#closeBox", true);
+function customerBill(g, bill) {
+  const lines = billLines(tOrders(tableNo));
+  const callG = S.calls.some(c => c.table === tableNo && c.kind === "garson");
+  const callH = S.calls.some(c => c.table === tableNo && c.kind === "hesap");
+  return `
+    <h1 class="large">Hesap</h1>
+    <p class="sub">Masa ${tableNo} · açık adisyon</p>
+    <div class="sec"><div class="group">
+      ${lines.length ? lines.map(l => `<div class="row"><span class="grow">${l.q}× ${esc(l.n)}</span><span class="val">${tl(l.sum)}</span></div>`).join("") : `<div class="row"><span class="grow" style="color:var(--label-2)">Henüz sipariş yok</span></div>`}
+      <div class="row"><span class="grow"><b>Toplam</b></span><b class="num" style="font-size:22px">${tl(bill)}</b></div>
+    </div></div>
+    ${payerCard(g, bill, payMode, true)}
+    <div class="sec"><div class="group">
+      <button class="row tap ind" id="callG"><span class="icon-sq" style="background:var(--orange)">${ic("bell")}</span><span class="grow" style="text-align:left">${callG ? "Garson geliyor" : "Garson Çağır"}</span>${callG ? `<span class="pill p-orange">Bekleniyor</span>` : ""}</button>
+      <button class="row tap ind" id="callH"><span class="icon-sq" style="background:var(--green)">${ic("card")}</span><span class="grow" style="text-align:left">${callH ? "Hesap istendi" : "Hesabı İste"}</span>${callH ? `<span class="pill p-green">İletildi</span>` : ""}</button>
+    </div></div>`;
 }
-function confirmClose(t, boxSel, resetLocal) {
-  $(boxSel).innerHTML = `<div class="confirm"><p>Masa ${t} hesabı ödendi olarak kapansın mı? Oyun da sıfırlanır.</p><button class="ghost" id="cNo">Vazgeç</button><button class="ghost danger" id="cYes">Kapat</button></div>`;
-  $("#cNo").onclick = () => $(boxSel).innerHTML = "";
-  $("#cYes").onclick = async () => {
-    if (await act({ type: "close", table: t })) {
-      if (resetLocal) ls.set(gameKey(), null);
-      closeLayer(); toast(`Masa ${t} hesabı kapandı`); render(false);
-    }
-  };
+function bindBill() {
+  $("#fab").innerHTML = "";
+  const pm = $("#payMode"); if (pm) pm.onclick = e => { const b = e.target.closest("button"); if (!b) return; payMode = b.dataset.p; render(true); };
+  $("#callG").onclick = () => { if (!S.calls.some(c => c.table === tableNo && c.kind === "garson")) act({ type: "call", table: tableNo, kind: "garson" }).then(ok => ok && toast("Garson çağrıldı")); };
+  $("#callH").onclick = () => { if (!S.calls.some(c => c.table === tableNo && c.kind === "hesap")) act({ type: "call", table: tableNo, kind: "hesap" }).then(ok => ok && toast("Hesap isteğiniz iletildi")); };
 }
 
-/* ===== TEZGÂH ===== */
-function renderTezgah() {
-  $("#bottom").innerHTML = "";
+/* ================= PANEL ================= */
+const PANEL = [["siparis", "Siparişler", "tray"], ["masalar", "Masalar", "grid"], ["menu", "Menü", "list"], ["qr", "QR Kodları", "qr"], ["liderlik", "Liderlik", "trophy"]];
+function renderPanel(sub) {
+  if (!PANEL.some(p => p[0] === sub)) sub = "siparis";
+  const pending = S.orders.filter(o => o.status === "new" && !o.paid).length + S.calls.length;
+  const side = PANEL.map(([k, l, i]) => `<a class="side-item" href="#panel-${k}" style="color:inherit;text-decoration:none" aria-current="${sub === k ? "page" : "false"}">${ic(i)}<span>${l}</span>${k === "siparis" && pending ? `<span class="badge">${pending}</span>` : ""}</a>`).join("");
+  let body;
+  if (sub === "masalar") body = panelTables();
+  else if (sub === "menu") body = panelMenu();
+  else if (sub === "qr") body = panelQR();
+  else if (sub === "liderlik") body = panelLeaders();
+  else body = panelOrders();
+  const title = PANEL.find(p => p[0] === sub)[1];
+  $("#root").innerHTML = `
+    <div class="split">
+      <aside class="sidebar"><a class="link" href="#">${ic("back")}Demo</a><h1 class="large">${esc(S.cafe)}</h1>${side}
+        <div style="margin-top:20px"><a class="side-item" href="#tv" style="color:inherit;text-decoration:none">${ic("tv")}<span>TV ekranı</span></a></div></aside>
+      <div class="content">
+        <div class="page gut">
+          <div class="noprint" style="display:flex;justify-content:space-between;align-items:center;margin-top:10px" id="topLinks"><a class="link" href="#">${ic("back")}Demo</a></div>
+          <div class="panel-tabs noprint"><div class="seg">${PANEL.map(([k, l]) => `<button data-pt="${k}" aria-pressed="${sub === k}">${l}${k === "siparis" && pending ? ` (${pending})` : ""}</button>`).join("")}</div></div>
+          <h1 class="large noprint">${title}</h1>
+          ${body}
+        </div>
+      </div>
+    </div>`;
+  if (matchMedia("(min-width: 900px)").matches) $("#topLinks").hidden = true;
+  $$("[data-pt]").forEach(b => b.onclick = () => { location.hash = "panel-" + b.dataset.pt; });
+  ({ siparis: bindOrders, masalar: bindTables, menu: bindPanelMenu, qr: bindQR, liderlik: () => {} })[sub]();
+}
+
+function panelOrders() {
   const open = S.orders.filter(o => !o.paid);
-  const cols = [
-    ["new", "Yeni", "Hazırlamaya başla", "prep"],
-    ["prep", "Hazırlanıyor", "Teslim edildi", "done"],
-    ["done", "Teslim edildi", null, null],
-  ];
-  const fresh = new Set(open.filter(o => o.status === "new" && Date.now() - o.t < 15000).map(o => o.id));
-  $("#app").innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
-      <h2 style="margin:0">Tezgâh</h2>
-      <button class="ghost" id="soundBtn">${soundOn ? "Ses açık" : "Sesi aç"}</button>
-    </div>
-    ${S.calls.length ? `<div class="calls">${S.calls.map(c => `<div class="card call"><span><b>Masa ${c.table}</b> ${c.kind === "hesap" ? "hesap istiyor" : "garson çağırıyor"} <small class="hint">${ago(c.t)}</small></span><button class="ghost" data-call="${c.id}">Tamam</button></div>`).join("")}</div>` : ""}
-    <div class="board">${cols.map(([st, title, next, nst]) => {
-      const list = open.filter(o => o.status === st).sort((a, b) => st === "done" ? b.t - a.t : a.t - b.t).slice(0, st === "done" ? 6 : 50);
-      return `<section class="col"><h2><span>${title}</span><span>${open.filter(o => o.status === st).length}</span></h2><div class="col-list">
-        ${list.length ? list.map(o => `<div class="card ticket ${fresh.has(o.id) ? "fresh" : ""}">
+  const fresh = new Set(open.filter(o => o.status === "new" && (S.now - o.t) < 15000).map(o => o.id));
+  const cols = [["new", "Yeni", "Hazırlamaya Başla", "prep", "fill"], ["prep", "Hazırlanıyor", "Teslim Edildi", "done", "tinted"], ["done", "Teslim edildi", null, null]];
+  return `
+    <div class="noprint" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px"><button class="btn small ${soundOn ? "tinted" : "gray"}" id="sound">${ic("sound")}${soundOn ? "Ses açık" : "Sesi aç"}</button></div>
+    ${S.calls.length ? `<div class="sec">${S.calls.map(c => `<div class="callrow"><span><b>Masa ${c.table}</b> ${c.kind === "hesap" ? "hesap istiyor" : "garson çağırıyor"} <small style="color:var(--label-2)">· ${ago(c.t)}</small></span><button class="btn small fill" data-call="${c.id}">Tamam</button></div>`).join("")}</div>` : ""}
+    <div class="sec board">${cols.map(([st, title, next, nst, style]) => {
+      const list = open.filter(o => o.status === st).sort((a, b) => st === "done" ? b.t - a.t : a.t - b.t).slice(0, st === "done" ? 6 : 60);
+      return `<section><div class="sec-h"><span>${title}</span><span>${open.filter(o => o.status === st).length}</span></div>
+        ${list.length ? list.map(o => `<div class="ticket ${fresh.has(o.id) ? "fresh" : ""}">
           <div class="th"><b>Masa ${o.table}</b><small>${ago(o.t)}</small></div>
-          <ul>${o.items.map(x => `<li><span class="q">${x.q}×</span>${esc(menuItem(x.id).n)}</li>`).join("")}</ul>
-          ${next ? `<button class="${st === "new" ? "primary" : "ghost"}" data-o="${o.id}" data-s="${nst}">${next}</button>` : ""}
-        </div>`).join("") : `<div class="card empty">Boş</div>`}
-      </div></section>`;
+          <ul>${o.items.map(x => `<li><b>${x.q}×</b>${esc(item(x.id).n)}</li>`).join("")}</ul>
+          ${o.note ? `<div class="note">Not: ${esc(o.note)}</div>` : ""}
+          ${next ? `<button class="btn ${style} block" style="height:44px" data-o="${o.id}" data-s="${nst}">${next}</button>` : ""}
+        </div>`).join("") : `<div class="empty-state" style="padding:22px">Boş</div>`}
+      </section>`;
     }).join("")}</div>`;
-  document.querySelectorAll("[data-o]").forEach(b => b.onclick = () => act({ type: "status", id: b.dataset.o, status: b.dataset.s }));
-  document.querySelectorAll("[data-call]").forEach(b => b.onclick = () => act({ type: "callDone", id: b.dataset.call }));
-  $("#soundBtn").onclick = () => { soundOn = !soundOn; if (soundOn) beep(); render(false); };
+}
+function bindOrders() {
+  $$("[data-o]").forEach(b => b.onclick = () => act({ type: "status", id: b.dataset.o, status: b.dataset.s }));
+  $$("[data-call]").forEach(b => b.onclick = () => act({ type: "callDone", id: b.dataset.call }));
+  $("#sound").onclick = () => { soundOn = !soundOn; if (soundOn) beep(true); render(true); };
 }
 let actx = null;
-function beep() {
-  if (!soundOn) return;
+function beep(force) {
+  if (!soundOn && !force) return;
   try {
     actx = actx || new (window.AudioContext || window.webkitAudioContext)();
-    [0, 0.18].forEach((d, k) => {
-      const o = actx.createOscillator(), g = actx.createGain();
-      o.frequency.value = k ? 1046 : 784; o.connect(g); g.connect(actx.destination);
-      g.gain.setValueAtTime(0.0001, actx.currentTime + d); g.gain.exponentialRampToValueAtTime(0.25, actx.currentTime + d + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + d + 0.16);
-      o.start(actx.currentTime + d); o.stop(actx.currentTime + d + 0.18);
-    });
+    [0, .16].forEach((d, k) => { const o = actx.createOscillator(), g = actx.createGain(); o.type = "sine"; o.frequency.value = k ? 1318 : 988; o.connect(g); g.connect(actx.destination);
+      const t0 = actx.currentTime + d; g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(.22, t0 + .015); g.gain.exponentialRampToValueAtTime(.0001, t0 + .22); o.start(t0); o.stop(t0 + .24); });
   } catch (e) {}
 }
 
-/* ===== SALON ===== */
-function renderSalon() {
-  $("#bottom").innerHTML = "";
+function panelTables() {
   const open = S.orders.filter(o => !o.paid);
-  const totalOpen = open.reduce((a, o) => a + orderTotal(o), 0);
+  const openSum = open.reduce((a, o) => a + orderTotal(o), 0);
   const busy = new Set([...open.map(o => o.table), ...Object.keys(S.games).map(Number)]);
-  const today = S.orders.filter(o => o.paid).reduce((a, o) => a + orderTotal(o), 0);
-  $("#app").innerHTML = `
-    <div class="summary">
-      <div class="card"><small>Açık hesaplar</small><span class="money">${tl(totalOpen)}</span></div>
-      <div class="card"><small>Dolu masa</small><span class="money">${busy.size} / ${S.tables}</span></div>
-      <div class="card"><small>Kapanan hesaplar</small><span class="money">${tl(today)}</span></div>
-      <div class="card"><small>Bekleyen sipariş</small><span class="money">${open.filter(o => o.status !== "done").length}</span></div>
+  const closed = S.orders.filter(o => o.paid).reduce((a, o) => a + orderTotal(o), 0);
+  return `
+    <div class="stats">
+      <div class="stat"><small>Açık hesaplar</small><b>${tl(openSum)}</b></div>
+      <div class="stat"><small>Dolu masa</small><b>${busy.size}/${S.tables}</b></div>
+      <div class="stat"><small>Bugün kapanan</small><b>${tl(closed)}</b></div>
+      <div class="stat"><small>Süren oyun</small><b>${Object.keys(S.games).length}</b></div>
     </div>
-    <div class="salon">${Array.from({ length: S.tables }, (_, k) => {
-      const t = k + 1; const bill = tableBill(t); const gm = S.games[t];
-      const calls = S.calls.filter(c => c.table === t);
+    <div class="sec tables">${Array.from({ length: S.tables }, (_, k) => {
+      const t = k + 1, bill = tBill(t), g = S.games[t], calls = S.calls.filter(c => c.table === t);
       let game = "";
-      if (gm && gm.sides && gm.sides.length > 1) {
-        const sd = gm.sides.slice().sort((a, b) => a.total - b.total);
-        game = `<small>${gm.mode === "team" ? "Eşli" : "Tekli"} · ${gm.hands}. el · Önde ${esc(sd[0].name)}</small><small>Öder: <b>${esc(sd[sd.length - 1].name)}</b></small>`;
-      }
-      return `<button class="card tcard ${busy.has(t) || calls.length ? "" : "idle"}" data-t="${t}">
-        <div class="th"><b>Masa ${t}</b><span class="tags">${calls.map(c => `<span class="status st-prep">${c.kind === "hesap" ? "Hesap" : "Garson"}</span>`).join("")}</span></div>
-        <span class="money">${bill ? tl(bill) : "Boş"}</span>${game}
-      </button>`;
+      if (g && g.hands.length) { const sd = sides(g).sort((a, b) => a.total - b.total); game = `<small>${g.mode === "team" ? "Eşli" : "Tekli"} · ${g.hands.length}. el · Önde ${esc(sd[0].name)}</small><small>Hesap: <b style="color:var(--label)">${esc(sd[sd.length - 1].name)}</b></small>`; }
+      else if (g) game = `<small>Oyun başladı</small>`;
+      const idle = !bill && !g && !calls.length;
+      return `<button class="tcard ${idle ? "idle" : ""}" data-t="${t}">
+        <span class="th"><b>Masa ${t}</b><span>${calls.map(c => `<span class="pill p-orange">${c.kind === "hesap" ? "Hesap" : "Garson"}</span>`).join(" ")}</span></span>
+        <span class="amt">${bill ? tl(bill) : idle ? "Boş" : tl(0)}</span>${game}</button>`;
     }).join("")}</div>`;
-  document.querySelectorAll("[data-t]").forEach(b => b.onclick = () => openTable(+b.dataset.t));
 }
+function bindTables() { $$("[data-t]").forEach(b => b.onclick = () => openTable(+b.dataset.t)); }
 function openTable(t) {
-  const lines = billLines(tableOrders(t)); const bill = tableBill(t); const gm = S.games[t];
+  const lines = billLines(tOrders(t)), bill = tBill(t), g = S.games[t];
+  draft = { kind: "table" };
   $("#layer").innerHTML = `<div class="scrim" id="scrim"></div>
-    <div class="sheet" role="dialog" aria-label="Masa ${t}"><div class="wrap gut">
-      <div class="grab"></div>
-      <div class="sheet-head"><h3>Masa ${t}</h3><button class="ghost" id="tClose">Kapat</button></div>
-      <h2>Adisyon</h2>
-      <div class="card">${lines.length ? `<div class="bill-lines">${lines.map(l => `<div class="bill-line"><span>${l.q}× ${esc(l.n)}</span><span class="money">${tl(l.sum)}</span></div>`).join("")}</div>` : `<div class="empty">Sipariş yok.</div>`}
-        <div class="bill-total"><span>Toplam</span><span class="money">${tl(bill)}</span></div></div>
-      ${bill && gm ? payerBlock(gm, bill, "loser") : ""}
-      ${bill || gm ? `<div style="margin-top:14px"><button class="primary" id="tPay" style="width:100%">Ödendi, masayı kapat</button><div id="tBox"></div></div>` : ""}
+    <div class="sheet anim" role="dialog" aria-label="Masa ${t}"><div class="in gut">
+      <div class="grabber"></div>
+      <div class="sheet-nav"><button class="link" id="tClose">Kapat</button><b>Masa ${t}</b><span style="width:52px"></span></div>
+      <div class="group" style="margin-top:8px">${lines.length ? lines.map(l => `<div class="row"><span class="grow">${l.q}× ${esc(l.n)}</span><span class="val">${tl(l.sum)}</span></div>`).join("") : `<div class="row" style="color:var(--label-2)">Sipariş yok</div>`}
+        <div class="row"><span class="grow"><b>Toplam</b></span><b class="num" style="font-size:22px">${tl(bill)}</b></div></div>
+      ${payerCard(g, bill, "loser", false)}
+      ${bill || g ? `<div class="sec"><button class="btn fill block" id="pay">Ödendi, Masayı Kapat</button><div id="payBox"></div></div>` : ""}
     </div></div>`;
-  $("#scrim").onclick = $("#tClose").onclick = closeLayer;
-  const pm = $("#payMode"); if (pm) pm.hidden = true;
-  const tp = $("#tPay"); if (tp) tp.onclick = () => confirmClose(t, "#tBox", t === tableNo);
+  $("#scrim").onclick = $("#tClose").onclick = () => { closeLayer(); };
+  const p = $("#pay"); if (p) p.onclick = () => confirmBox("#payBox", `Masa ${t} hesabı ödendi olarak kapansın mı? Oyun varsa biter ve sonucu liderlik tablosuna yazılır.`, "Kapat", async () => { if (await act({ type: "close", table: t })) { closeLayer(); toast(`Masa ${t} kapandı`); } });
 }
 
-/* ---------- misc ---------- */
+function panelMenu() {
+  return `
+    <p class="sub">Fiyatı değiştirin veya biten ürünü kapatın. Müşterinin menüsü anında güncellenir.</p>
+    <div class="sec"><div class="group"><label class="row"><span class="grow">Kafe adı</span><input class="inl" id="cafeName" value="${esc(S.cafe)}" maxlength="40"></label></div></div>
+    ${S.cats.map((c, ci) => `<div class="sec"><div class="sec-h"><span>${esc(c)}</span><span>Satışta</span></div><div class="group">
+      ${S.menu.filter(m => m.c === ci).map(m => `<div class="row"><button class="grow tap" data-edit="${m.id}" style="text-align:left"><span class="t">${esc(m.n)}</span><span class="d">${tl(m.p)}${m.d ? " · " + esc(m.d) : ""}</span></button><input type="checkbox" class="switch" data-tog="${m.id}" ${m.on ? "checked" : ""} aria-label="${esc(m.n)} satışta"></div>`).join("") || `<div class="row" style="color:var(--label-2)">Ürün yok</div>`}
+    </div></div>`).join("")}
+    <div class="sec"><button class="btn tinted block" id="addItem">+ Ürün Ekle</button></div>`;
+}
+function bindPanelMenu() {
+  $$("[data-tog]").forEach(el => el.onchange = () => act({ type: "menuToggle", id: el.dataset.tog, on: el.checked }).then(ok => ok && toast(el.checked ? "Satışa açıldı" : "Menüde “Şu an yok” görünecek")));
+  $$("[data-edit]").forEach(b => b.onclick = () => editItem(S.menu.find(m => m.id === b.dataset.edit)));
+  $("#addItem").onclick = () => editItem(null);
+  const cn = $("#cafeName"); cn.onchange = () => act({ type: "cafe", name: cn.value });
+}
+function editItem(m) {
+  const it = m || { n: "", d: "", p: "", c: 0 };
+  draft = { kind: "item" };
+  $("#layer").innerHTML = `<div class="scrim" id="scrim"></div>
+    <div class="sheet anim" role="dialog" aria-label="Ürün"><div class="in gut">
+      <div class="grabber"></div>
+      <div class="sheet-nav"><button class="link" id="iClose">Vazgeç</button><b>${m ? "Ürünü Düzenle" : "Yeni Ürün"}</b><button class="link" id="iSave" style="font-weight:600">Kaydet</button></div>
+      <div class="group" style="margin-top:8px">
+        <label class="row"><span style="width:90px">Ad</span><input class="inl" style="text-align:left;color:var(--label)" id="iN" value="${esc(it.n)}" maxlength="40" placeholder="ör. Bitki çayı"></label>
+        <label class="row"><span style="width:90px">Açıklama</span><input class="inl" style="text-align:left;color:var(--label)" id="iD" value="${esc(it.d || "")}" maxlength="80" placeholder="İsteğe bağlı"></label>
+        <label class="row"><span style="width:90px">Fiyat (₺)</span><input class="inl" style="text-align:left;color:var(--label)" id="iP" value="${esc(it.p)}" inputmode="numeric" placeholder="0"></label>
+        <label class="row"><span style="width:90px">Kategori</span><select class="inl" style="text-align:left;color:var(--label)" id="iC">${S.cats.map((c, i) => `<option value="${i}" ${i === it.c ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></label>
+      </div>
+      <p class="sec-f" id="iErr"></p>
+      ${m ? `<div class="sec"><div class="group"><button class="row tap" id="iDel" style="color:var(--red)">Ürünü sil</button></div><div id="iBox"></div></div>` : ""}
+    </div></div>`;
+  $("#scrim").onclick = $("#iClose").onclick = closeLayer;
+  $("#iN").focus();
+  $("#iSave").onclick = async () => {
+    const n = $("#iN").value.trim(); const p = parseInt($("#iP").value.replace(/[^0-9]/g, ""));
+    if (!n) { $("#iErr").textContent = "Ürün adını yazın."; $("#iN").focus(); return; }
+    if (isNaN(p)) { $("#iErr").textContent = "Fiyatı rakamla yazın, ör. 45."; $("#iP").focus(); return; }
+    if (await act({ type: "menuSave", item: { id: m && m.id, n, d: $("#iD").value, p, c: +$("#iC").value } })) { closeLayer(); toast(m ? "Ürün güncellendi" : "Ürün menüye eklendi"); }
+  };
+  const del = $("#iDel"); if (del) del.onclick = () => confirmBox("#iBox", `“${m.n}” menüden silinsin mi?`, "Sil", async () => { if (await act({ type: "menuDel", id: m.id })) { closeLayer(); toast("Ürün silindi"); } });
+}
+
+function panelQR() {
+  return `
+    <p class="sub noprint">Her masaya kendi QR'ını yapıştırın. Müşteri okutunca o masanın menüsü, oyunu ve hesabı açılır.</p>
+    <div class="noprint" style="margin-bottom:6px"><button class="btn small tinted" id="print">${ic("print")}Yazdır</button></div>
+    <div class="sec qrs">${Array.from({ length: S.tables }, (_, k) => { const u = link("#musteri", { masa: k + 1 }); return `<div class="qrcard"><b>Masa ${k + 1}</b><div class="qr">${qrSvg(u)}</div><span style="font-size:13px">${esc(S.cafe)}</span><small>Okutun: menü · skor · hesap</small></div>`; }).join("")}</div>`;
+}
+function bindQR() { $("#print").onclick = () => { try { window.print(); } catch (e) {} }; }
+
+function leaders() {
+  const week = (S.now || Date.now()) - 7 * 864e5;
+  const m = {};
+  S.results.filter(r => r.t >= week).forEach(r => r.winners.forEach(n => { m[n] = (m[n] || 0) + 1; }));
+  return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 10);
+}
+function panelLeaders() {
+  const lb = leaders();
+  const recent = S.results.slice().reverse().slice(0, 8);
+  return `
+    <p class="sub">Biten her oyunun kazananı otomatik yazılır. TV ekranında da görünür.</p>
+    <div class="sec"><div class="sec-h"><span>Bu hafta en çok kazananlar</span></div><div class="group">
+      ${lb.length ? lb.map(([n, w], i) => `<div class="row"><span class="rank ${i === 0 ? "first" : ""}">${i + 1}</span><span class="grow">${esc(n)}</span><span class="val">${w} galibiyet</span></div>`).join("") : `<div class="row" style="color:var(--label-2)">Henüz biten oyun yok</div>`}
+    </div></div>
+    <div class="sec"><div class="sec-h"><span>Son oyunlar</span></div><div class="group">
+      ${recent.map(r => `<div class="row"><span class="grow"><span class="t">${r.winners.map(esc).join(" & ")} kazandı</span><span class="d">Masa ${r.table}</span></span><span class="val">${ago(r.t)}</span></div>`).join("") || `<div class="row" style="color:var(--label-2)">Yok</div>`}
+    </div></div>`;
+}
+
+/* ================= TV ================= */
+function renderTV() {
+  const live = Object.entries(S.games).filter(([, g]) => g.hands.length).sort((a, b) => a[0] - b[0]);
+  const lb = leaders().slice(0, 6);
+  const now = new Date();
+  $("#root").innerHTML = `
+    <div class="tv">
+      <header><h1>${esc(S.cafe)} · Canlı Masalar</h1><span class="clock">${now.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}</span></header>
+      <div class="grid">
+        <div class="live">${live.length ? live.map(([t, g]) => {
+          const sd = sides(g).sort((a, b) => a.total - b.total);
+          return `<div class="tvcard"><div class="th"><b>Masa ${t}</b><span>${g.mode === "team" ? "Eşli" : "Tekli"} · ${g.hands.length}. el</span></div>
+            ${sd.map((s, r) => `<div class="tvrow"><span class="rank ${r === 0 ? "first" : ""}">${r + 1}</span><span class="grow">${esc(s.name)}</span><span class="s" style="color:${s.total < 0 ? "#30d158" : "#fff"}">${fmt(s.total)}</span></div>`).join("")}</div>`;
+        }).join("") : `<div class="empty">Şu an oynanan oyun yok</div>`}</div>
+        <div class="lb"><h2>Haftanın Liderleri</h2>${lb.length ? lb.map(([n, w], i) => `<div class="tvrow"><span class="rank ${i === 0 ? "first" : ""}">${i + 1}</span><span class="grow">${esc(n)}</span><span class="s" style="font-size:24px">${w}</span></div>`).join("") : `<p style="color:rgba(235,235,245,.6)">Henüz yok</p>`}</div>
+      </div>
+      <a href="#" style="position:fixed;right:16px;bottom:12px;color:rgba(235,235,245,.35);font-size:13px;text-decoration:none">Demo'ya dön</a>
+    </div>`;
+}
+
+/* ---------- shared ---------- */
+function confirmBox(sel, msg, label, fn) {
+  $(sel).innerHTML = `<div class="confirm"><span>${esc(msg)}</span><div class="acts"><button class="btn small gray" data-no>Vazgeç</button><button class="btn small red" data-yes>${esc(label)}</button></div></div>`;
+  $(sel + " [data-no]").onclick = () => $(sel).innerHTML = "";
+  $(sel + " [data-yes]").onclick = async e => { e.target.disabled = true; await fn(); const b = $(sel); if (b) b.innerHTML = ""; };
+}
+function closeLayer() { $("#layer").innerHTML = ""; draft = null; }
 let toastT;
-function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2200); }
-$("#resetBtn").onclick = () => {
-  const b = $("#resetBtn");
-  if (b.dataset.armed) { act({ type: "reset" }); ls.set(gameKey(), null); delete b.dataset.armed; b.textContent = "Demoyu sıfırla"; toast("Demo sıfırlandı"); }
-  else { b.dataset.armed = "1"; b.textContent = "Emin misiniz? Tekrar dokunun"; setTimeout(() => { delete b.dataset.armed; b.textContent = "Demoyu sıfırla"; }, 3000); }
-};
-window.addEventListener("hashchange", () => { closeLayer(); render(true); });
-render(false);
+function toast(msg, ok = true) {
+  const t = $("#toast"); t.innerHTML = (ok ? ic("check") : "") + esc(msg); t.hidden = false;
+  clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2200);
+}
+window.addEventListener("hashchange", () => { closeLayer(); $("#toast").hidden = true; render(true); window.scrollTo(0, 0); });
+render(true);
 pull();
-setInterval(() => { if (!document.hidden && !draft) pull(); }, 2500);
+setInterval(() => { if (!document.hidden) pull(); }, 2500);
+setInterval(() => { if (route().v === "tv" && S) render(true); }, 30000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) pull(); });
 })();
 </script>
