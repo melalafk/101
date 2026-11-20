@@ -427,6 +427,7 @@ function renderStart() {
     <p class="eyebrow" style="margin-top:28px">Demo</p>
     <h1 class="large">Masa101</h1>
     <p class="sub">Okey masası için QR menü, ortak skor ve “kaybeden öder” hesap. ${esc(S.cafe)} örneğiyle.</p>
+    <div id="lanHint"></div>
 
     <div class="sec">
       <div class="hero-qr">
@@ -463,6 +464,13 @@ function renderStart() {
       <div id="resetBox"></div>
     </div>
   </div>`;
+  if (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) {
+    fetch("/api/lan").then(r => r.ok ? r.json() : null).then(d => {
+      const box = $("#lanHint"); if (!box || !d || !d.url) return;
+      const u = d.url + "/" + location.search + location.hash;
+      box.innerHTML = `<div class="callrow" style="margin-top:12px;display:block"><b>QR kodları telefonda açılmaz</b><br><span style="font-size:15px">Bu sayfa “localhost” adresinden açık. Telefonların bağlanabilmesi için şu adresten açın: <a class="link" href="${esc(u)}">${esc(d.url)}</a></span></div>`;
+    }).catch(() => {});
+  }
   $("#tSel").onchange = e => { tableNo = +e.target.value; ls.set("m101.table", tableNo); cart = ls.get(cartKey(), {}); render(true); };
   $("#resetBtn").onclick = () => confirmBox("#resetBox", "Tüm siparişler, oyunlar ve menü değişiklikleri silinip demo baştan kurulsun mu?", "Sıfırla", async () => { await act({ type: "reset" }); cart = {}; saveCart(); toast("Demo sıfırlandı"); });
 }

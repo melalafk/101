@@ -1,0 +1,11 @@
+{
+  "name": "masa101",
+  "private": true,
+  "description": "Okey masası için QR menü, ortak skor ve kaybeden öder hesap (demo)",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node server.mjs",
+    "cf:dev": "npx wrangler dev",
+    "cf:deploy": "npx wrangler deploy"
+  }
+}
