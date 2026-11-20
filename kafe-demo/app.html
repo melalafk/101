@@ -16,7 +16,7 @@
   --bg: #f2f2f7; --cell: #ffffff; --cell-2: #f2f2f7; --label: #000000; --label-2: rgba(60,60,67,.6); --label-3: rgba(60,60,67,.3);
   --sep: rgba(60,60,67,.18); --fill: rgba(120,120,128,.12); --fill-2: rgba(120,120,128,.2);
   --tint: #007aff; --tint-soft: rgba(0,122,255,.12); --green: #34c759; --red: #ff3b30; --orange: #ff9500; --yellow: #ffcc00;
-  --bar: rgba(249,249,249,.82); --shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
+  --edge: rgba(242,242,247,.85); --bar: rgba(249,249,249,.82); --shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
   --t-red: #ff3b30; --t-blue: #007aff; --t-black: #1c1c1e; --t-yellow: #ff9500;
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
   --round: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
@@ -27,13 +27,13 @@
     --bg: #000000; --cell: #1c1c1e; --cell-2: #2c2c2e; --label: #ffffff; --label-2: rgba(235,235,245,.6); --label-3: rgba(235,235,245,.3);
     --sep: rgba(84,84,88,.6); --fill: rgba(118,118,128,.24); --fill-2: rgba(118,118,128,.32);
     --tint: #0a84ff; --tint-soft: rgba(10,132,255,.18); --green: #30d158; --red: #ff453a; --orange: #ff9f0a; --yellow: #ffd60a;
-    --bar: rgba(22,22,24,.8); --shadow: none;
+    --edge: rgba(0,0,0,.75); --bar: rgba(22,22,24,.8); --shadow: none;
     --t-red: #ff453a; --t-blue: #0a84ff; --t-black: #e5e5ea; --t-yellow: #ff9f0a; color-scheme: dark;
   }
 }
 * { box-sizing: border-box; }
 html, body { min-height: 100%; }
-body { margin: 0; background: var(--bg); color: var(--label); font: 17px/1.29 var(--font); letter-spacing: -.01em; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+body { margin: 0; background: var(--bg); color: var(--label); font: 17px/1.29 var(--font); letter-spacing: -.022em; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
 button, input, select, textarea { font: inherit; color: inherit; letter-spacing: inherit; }
 button { cursor: pointer; background: none; border: 0; padding: 0; }
 :focus-visible { outline: 2px solid var(--tint); outline-offset: 2px; border-radius: 6px; }
@@ -44,13 +44,17 @@ svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-widt
 .num { font-family: var(--round); font-variant-numeric: tabular-nums; }
 
 /* nav + titles */
-.navbar { position: sticky; top: 0; z-index: 9; background: var(--bar); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: .5px solid var(--sep); padding-top: env(safe-area-inset-top, 0px); }
+.navbar { position: sticky; top: 0; z-index: 9; background: var(--bg); padding-top: env(safe-area-inset-top, 0px); transition: background-color .2s; }
+/* scroll edge: the bar turns into material only once content passes under it, with a soft fade instead of a hard line */
+.navbar::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 14px; background: linear-gradient(var(--edge), transparent); opacity: 0; pointer-events: none; transition: opacity .2s; }
+body.scrolled .navbar { background: var(--bar); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); }
+body.scrolled .navbar::after { opacity: 1; }
 .navbar .in { display: flex; align-items: center; justify-content: space-between; gap: 10px; height: 44px; max-width: 1200px; margin: 0 auto; }
 .navbar .title { font-weight: 600; font-size: 17px; text-align: center; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .navbar .side { min-width: 70px; display: flex; gap: 14px; align-items: center; }
 .navbar .side:last-child { justify-content: flex-end; }
 .link { color: var(--tint); font-size: 17px; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; }
-.large { font-size: 34px; line-height: 1.12; font-weight: 700; letter-spacing: .01em; margin: 14px 0 4px; text-wrap: balance; }
+.large { font-size: 34px; line-height: 1.1; font-weight: 700; letter-spacing: -.022em; margin: 14px 0 4px; text-wrap: balance; }
 .sub { color: var(--label-2); font-size: 15px; margin: 0 0 8px; }
 .eyebrow { color: var(--label-2); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; }
 
@@ -58,7 +62,7 @@ svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-widt
 .sec { margin-top: 26px; }
 .sec-h { font-size: 13px; color: var(--label-2); text-transform: uppercase; margin: 0 16px 7px; letter-spacing: .01em; display: flex; justify-content: space-between; gap: 8px; }
 .sec-h.big { text-transform: none; font-size: 22px; font-weight: 700; color: var(--label); margin: 0 0 10px; letter-spacing: .01em; }
-.sec-f { font-size: 13px; color: var(--label-2); margin: 7px 16px 0; }
+.sec-f { font-size: 13px; color: var(--label-2); margin: 7px 16px 0; letter-spacing: 0; }
 .group { background: var(--cell); border-radius: 12px; overflow: hidden; }
 .row { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 11px 16px; position: relative; width: 100%; text-align: left; }
 .row + .row::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; border-top: .5px solid var(--sep); }
@@ -86,7 +90,11 @@ svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-widt
 .btn.small { height: 34px; border-radius: 17px; padding: 0 14px; font-size: 15px; }
 .btn.block { width: 100%; }
 .btn:disabled { opacity: .4; }
-.btn:active { opacity: .7; }
+/* press feedback: instant on touch-down, released quickly */
+.btn, .plus, .chip, .tcard, .qk button, .sign, .pcard, .stepper button, .side-item, .tabbar button, .link, .seg button { transition: transform 100ms ease-out, opacity 100ms ease-out; touch-action: manipulation; }
+.btn:active, .plus:active, .chip:active, .tcard:active, .qk button:active, .sign:active, .stepper button:active { transform: scale(.96); }
+.tabbar button:active, .link:active, .side-item:active { opacity: .55; }
+.row.tap { transition: background-color 80ms; }
 .plus { width: 30px; height: 30px; border-radius: 50%; background: var(--tint-soft); color: var(--tint); display: grid; place-items: center; font-size: 22px; font-weight: 500; line-height: 1; flex: none; }
 .stepper { display: inline-flex; align-items: center; background: var(--fill); border-radius: 9px; height: 32px; flex: none; }
 .stepper button { width: 40px; height: 32px; font-size: 20px; color: var(--label); }
@@ -114,7 +122,8 @@ svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-widt
 .badge { min-width: 18px; height: 18px; border-radius: 9px; background: var(--red); color: #fff; font-size: 12px; font-weight: 600; display: inline-grid; place-items: center; padding: 0 5px; }
 
 /* tab bar + floating action */
-.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 9; background: var(--bar); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-top: .5px solid var(--sep); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 9; background: var(--bar); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.tabbar::before { content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: 14px; background: linear-gradient(transparent, var(--edge)); pointer-events: none; }
 .tabbar .in { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; max-width: 720px; margin: 0 auto; height: 50px; }
 .tabbar button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 10px; font-weight: 500; color: var(--label-2); position: relative; }
 .tabbar button[aria-current="page"] { color: var(--tint); }
@@ -157,8 +166,10 @@ svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-widt
 /* sheet */
 .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 20; }
 .sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 21; max-height: 94vh; overflow-y: auto; background: var(--bg); border-radius: 14px 14px 0 0; padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)); }
-.sheet.anim { animation: up .28s cubic-bezier(.2,.8,.2,1); }
-@keyframes up { from { transform: translateY(40px); opacity: .5; } }
+.sheet { overscroll-behavior: contain; will-change: transform; box-shadow: 0 -10px 40px rgba(0,0,0,.12); }
+.sheet .grabber, .sheet .sheet-nav { touch-action: none; cursor: grab; }
+.sheet.dragging { cursor: grabbing; user-select: none; }
+.sheet.closing, .scrim.closing { pointer-events: none; }
 .sheet .in { max-width: 640px; margin: 0 auto; }
 .grabber { width: 36px; height: 5px; border-radius: 3px; background: var(--fill-2); margin: 6px auto 4px; }
 .sheet-nav { display: flex; align-items: center; justify-content: space-between; height: 44px; }
@@ -238,7 +249,7 @@ svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-widt
 /* tv */
 .tv { min-height: 100vh; background: #000; color: #fff; padding: 28px 36px; display: grid; gap: 24px; grid-template-rows: auto 1fr; }
 .tv header { display: flex; justify-content: space-between; align-items: baseline; gap: 20px; }
-.tv h1 { margin: 0; font-size: clamp(28px, 3.4vw, 52px); font-weight: 700; letter-spacing: .01em; }
+.tv h1 { margin: 0; font-size: clamp(28px, 3.4vw, 52px); font-weight: 700; letter-spacing: -.022em; line-height: 1.05; }
 .tv .clock { font-family: var(--round); font-size: clamp(24px, 3vw, 44px); font-weight: 600; color: rgba(235,235,245,.6); font-variant-numeric: tabular-nums; }
 .tv .grid { display: grid; gap: 22px; grid-template-columns: 1fr; }
 @media (min-width: 1000px) { .tv .grid { grid-template-columns: 2.2fr 1fr; } }
@@ -259,10 +270,24 @@ svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-widt
 
 .empty-state { text-align: center; padding: 34px 20px; color: var(--label-2); background: var(--cell); border-radius: 12px; }
 .empty-state b { display: block; color: var(--label); font-size: 20px; margin-bottom: 6px; }
-.toast { position: fixed; left: 50%; top: calc(54px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); z-index: 30; background: var(--bar); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 8px 30px rgba(0,0,0,.18); border-radius: 22px; padding: 12px 18px; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; max-width: calc(100vw - 32px); }
+.toast { position: fixed; left: 50%; top: calc(54px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); z-index: 30; background: var(--bar); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 8px 30px rgba(0,0,0,.18); border-radius: 22px; padding: 12px 18px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; display: flex; align-items: center; gap: 8px; max-width: calc(100vw - 32px); animation: materialize .32s cubic-bezier(.2,.9,.25,1); }
+@keyframes materialize { from { opacity: 0; transform: translate(-50%, -10px) scale(.92); filter: blur(8px); } }
 .toast svg.i { color: var(--green); }
 .offline { position: fixed; left: 0; right: 0; top: 0; z-index: 40; background: var(--red); color: #fff; text-align: center; font-size: 13px; padding: calc(4px + env(safe-area-inset-top, 0px)) 8px 4px; }
-@media (prefers-reduced-motion: reduce) { .sheet.anim, .ticket.fresh { animation: none; } .switch, .switch::after { transition: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .ticket.fresh { animation: none; } .switch, .switch::after { transition: none; }
+  .toast { animation: fade .2s ease; }
+  .btn:active, .plus:active, .chip:active, .tcard:active, .qk button:active, .sign:active, .stepper button:active { transform: none; opacity: .6; }
+}
+@keyframes fade { from { opacity: 0; } }
+@media (prefers-reduced-transparency: reduce) {
+  body.scrolled .navbar, .tabbar, .toast { background: var(--cell); backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+@media (prefers-contrast: more) {
+  :root { --sep: rgba(60,60,67,.6); --label-2: rgba(60,60,67,.85); }
+  .group, .ticket, .tcard, .stat, .payer, .qrcard, .hrow, .btn.gray, .btn.tinted, .chip, .search { box-shadow: inset 0 0 0 1px var(--sep); }
+  body.scrolled .navbar, .tabbar { background: var(--cell); backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: 0 1px 0 var(--sep); }
+}
 @media print {
   body { background: #fff; }
   .sidebar, .navbar, .panel-tabs, .noprint, .tabbar, .fab { display: none !important; }
@@ -512,7 +537,7 @@ function openCart() {
     const note = $("#cNote") ? $("#cNote").value : (draft && draft.note) || "";
     draft = { kind: "cart", note };
     $("#layer").innerHTML = `<div class="scrim" id="scrim"></div>
-      <div class="sheet ${anim ? "anim" : ""}" role="dialog" aria-label="Sepet"><div class="in gut">
+      <div class="sheet" role="dialog" aria-modal="true" aria-label="Sepet"><div class="in gut">
         <div class="grabber"></div>
         <div class="sheet-nav"><button class="link" id="sClose">Kapat</button><b>Sepet · Masa ${tableNo}</b><span style="width:52px"></span></div>
         <div class="group" style="margin-top:8px">${lines.map(([id, q]) => `<div class="row"><span class="thumb k${item(id).c}" style="width:36px;height:36px">${ic(CAT_ICON[item(id).c])}</span><span class="grow"><span class="t">${esc(item(id).n)}</span><span class="d">${tl(item(id).p * q)}</span></span><span class="stepper"><button data-cd="${id}" aria-label="Azalt">−</button><span>${q}</span><button data-ci="${id}" aria-label="Artır">+</button></span></div>`).join("")}
@@ -522,13 +547,14 @@ function openCart() {
         <p class="sec-f">Sipariş doğrudan tezgâha gider. Ödeme hesap sekmesinden, masada.</p>
         <button class="btn fill block" id="send" style="margin-top:16px">Siparişi Gönder</button>
       </div></div>`;
+    mountSheet(anim);
     $("#scrim").onclick = $("#sClose").onclick = () => { closeLayer(); render(true); };
     $$("[data-ci]").forEach(b => b.onclick = () => { cart[b.dataset.ci]++; saveCart(); draw(false); });
     $$("[data-cd]").forEach(b => b.onclick = () => { cart[b.dataset.cd]--; if (cart[b.dataset.cd] <= 0) delete cart[b.dataset.cd]; saveCart(); draw(false); });
     $("#send").onclick = async () => {
       $("#send").disabled = true;
       const ok = await act({ type: "order", table: tableNo, items: lines.map(([id, q]) => ({ id, q })), note: $("#cNote").value });
-      if (ok) { cart = {}; saveCart(); closeLayer(); render(true); toast("Siparişiniz tezgâha iletildi"); }
+      if (ok) { haptic(); cart = {}; saveCart(); closeLayer(); render(true); toast("Siparişiniz tezgâha iletildi"); }
       else $("#send").disabled = false;
     };
   };
@@ -613,7 +639,7 @@ function drawHand(anim) {
   g.hands.slice(0, draft.idx == null ? g.hands.length : draft.idx).forEach(h => h.forEach((v, i) => before[i] += v));
   const no = draft.idx == null ? g.hands.length + 1 : draft.idx + 1;
   $("#layer").innerHTML = `<div class="scrim" id="scrim"></div>
-    <div class="sheet anim" role="dialog" aria-label="El girişi"><div class="in gut">
+    <div class="sheet" role="dialog" aria-modal="true" aria-label="El girişi"><div class="in gut">
       <div class="grabber"></div>
       <div class="sheet-nav"><button class="link" id="hClose">Vazgeç</button><b>${no}. El</b><button class="link" id="hSave2" style="font-weight:600">Kaydet</button></div>
       <p class="sec-f" style="margin:4px 4px 12px">Puanı yazın, klavyede İleri ile sıradakine geçin. Biten için önce − tuşu.</p>
@@ -632,6 +658,7 @@ function drawHand(anim) {
         <button class="btn fill" id="hSave">Eli Kaydet</button>
       </div>
     </div></div>`;
+  mountSheet(true);
   const upd = i => {
     const neg = $(`[data-sign="${i}"]`).getAttribute("aria-pressed") === "true";
     const d = $("#hv" + i).value.replace(/[^0-9]/g, "");
@@ -651,7 +678,7 @@ function drawHand(anim) {
   $$("[data-add]").forEach(b => b.onclick = () => { const i = +b.dataset.add; setVal(i, String(parse(draft.v[i]) + 101)); });
   const save = async () => {
     const d = draft; const ok = await act({ type: "hand", table: tableNo, idx: d.idx, s: d.v.map(parse) });
-    if (ok) { closeLayer(); render(true); }
+    if (ok) { haptic(); closeLayer(); render(true); }
   };
   $("#hSave").onclick = $("#hSave2").onclick = save;
   $("#scrim").onclick = $("#hClose").onclick = () => { closeLayer(); render(true); };
@@ -793,7 +820,7 @@ function openTable(t) {
   const lines = billLines(tOrders(t)), bill = tBill(t), g = S.games[t];
   draft = { kind: "table" };
   $("#layer").innerHTML = `<div class="scrim" id="scrim"></div>
-    <div class="sheet anim" role="dialog" aria-label="Masa ${t}"><div class="in gut">
+    <div class="sheet" role="dialog" aria-modal="true" aria-label="Masa ${t}"><div class="in gut">
       <div class="grabber"></div>
       <div class="sheet-nav"><button class="link" id="tClose">Kapat</button><b>Masa ${t}</b><span style="width:52px"></span></div>
       <div class="group" style="margin-top:8px">${lines.length ? lines.map(l => `<div class="row"><span class="grow">${l.q}× ${esc(l.n)}</span><span class="val">${tl(l.sum)}</span></div>`).join("") : `<div class="row" style="color:var(--label-2)">Sipariş yok</div>`}
@@ -801,8 +828,9 @@ function openTable(t) {
       ${payerCard(g, bill, "loser", false)}
       ${bill || g ? `<div class="sec"><button class="btn fill block" id="pay">Ödendi, Masayı Kapat</button><div id="payBox"></div></div>` : ""}
     </div></div>`;
+  mountSheet(true);
   $("#scrim").onclick = $("#tClose").onclick = () => { closeLayer(); };
-  const p = $("#pay"); if (p) p.onclick = () => confirmBox("#payBox", `Masa ${t} hesabı ödendi olarak kapansın mı? Oyun varsa biter ve sonucu liderlik tablosuna yazılır.`, "Kapat", async () => { if (await act({ type: "close", table: t })) { closeLayer(); toast(`Masa ${t} kapandı`); } });
+  const p = $("#pay"); if (p) p.onclick = () => confirmBox("#payBox", `Masa ${t} hesabı ödendi olarak kapansın mı? Oyun varsa biter ve sonucu liderlik tablosuna yazılır.`, "Kapat", async () => { if (await act({ type: "close", table: t })) { haptic(); closeLayer(); toast(`Masa ${t} kapandı`); } });
 }
 
 function panelMenu() {
@@ -824,7 +852,7 @@ function editItem(m) {
   const it = m || { n: "", d: "", p: "", c: 0 };
   draft = { kind: "item" };
   $("#layer").innerHTML = `<div class="scrim" id="scrim"></div>
-    <div class="sheet anim" role="dialog" aria-label="Ürün"><div class="in gut">
+    <div class="sheet" role="dialog" aria-modal="true" aria-label="Ürün"><div class="in gut">
       <div class="grabber"></div>
       <div class="sheet-nav"><button class="link" id="iClose">Vazgeç</button><b>${m ? "Ürünü Düzenle" : "Yeni Ürün"}</b><button class="link" id="iSave" style="font-weight:600">Kaydet</button></div>
       <div class="group" style="margin-top:8px">
@@ -836,6 +864,7 @@ function editItem(m) {
       <p class="sec-f" id="iErr"></p>
       ${m ? `<div class="sec"><div class="group"><button class="row tap" id="iDel" style="color:var(--red)">Ürünü sil</button></div><div id="iBox"></div></div>` : ""}
     </div></div>`;
+  mountSheet(true);
   $("#scrim").onclick = $("#iClose").onclick = closeLayer;
   $("#iN").focus();
   $("#iSave").onclick = async () => {
@@ -900,7 +929,121 @@ function confirmBox(sel, msg, label, fn) {
   $(sel + " [data-no]").onclick = () => $(sel).innerHTML = "";
   $(sel + " [data-yes]").onclick = async e => { e.target.disabled = true; await fn(); const b = $(sel); if (b) b.innerHTML = ""; };
 }
-function closeLayer() { $("#layer").innerHTML = ""; draft = null; }
+/* ---------- motion: springs (Apple's damping ratio + response), velocity handoff, momentum projection ---------- */
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
+function spring({ from, to, velocity = 0, damping = 1, response = .35, onUpdate, onDone }) {
+  const k = Math.pow(2 * Math.PI / response, 2), c = 4 * Math.PI * damping / response;
+  let x = from, v = velocity, last = performance.now(), raf = 0, live = true;
+  const step = now => {
+    if (!live) return;
+    const dt = Math.min(.064, (now - last) / 1000); last = now;
+    const n = Math.max(1, Math.ceil(dt / .004)), h = dt / n;
+    for (let i = 0; i < n; i++) { const a = -k * (x - to) - c * v; v += a * h; x += v * h; }
+    if (Math.abs(x - to) < .5 && Math.abs(v) < 8) { live = false; onUpdate(to); onDone && onDone(); return; }
+    onUpdate(x); raf = requestAnimationFrame(step);
+  };
+  raf = requestAnimationFrame(step);
+  return { stop() { live = false; cancelAnimationFrame(raf); return { x, v }; } };
+}
+const project = (v, rate = .998) => (v / 1000) * rate / (1 - rate);
+const rubberband = (over, dim, c = .55) => (over * dim * c) / (dim + c * Math.abs(over));
+function haptic() { try { navigator.vibrate && navigator.vibrate(8); } catch (e) {} }
+
+let sheetCtl = null;
+function mountSheet(animateIn) {
+  const sheet = $("#layer .sheet"), scrim = $("#layer .scrim");
+  if (!sheet || !scrim) return;
+  const st = { sheet, y: 0, h: Math.max(1, sheet.offsetHeight), anim: null, closing: false };
+  const apply = y => {
+    st.y = y;
+    sheet.style.transform = `translate3d(0, ${y}px, 0)`;
+    scrim.style.opacity = String(Math.min(1, Math.max(0, 1 - y / st.h)));
+  };
+  const go = (target, velocity, damping, done) => {
+    if (st.anim) st.anim.stop();
+    st.anim = spring({ from: st.y, to: target, velocity, damping, response: .32, onUpdate: apply, onDone: () => { st.anim = null; done && done(); } });
+  };
+  st.close = (velocity = 0) => {
+    st.closing = true; sheet.classList.add("closing"); scrim.classList.add("closing");
+    const remove = () => { if (sheet.isConnected) { sheet.remove(); scrim.remove(); } };
+    if (reduceMotion.matches && !drag) {
+      sheet.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200 }).onfinish = remove;
+      scrim.animate([{ opacity: scrim.style.opacity || 1 }, { opacity: 0 }], { duration: 200, fill: "forwards" });
+      return;
+    }
+    go(st.h + 24, Math.max(velocity, 0), 1, remove);
+  };
+  if (animateIn && reduceMotion.matches) { apply(0); sheet.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 }); scrim.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 }); }
+  else if (animateIn) { apply(st.h); go(0, 0, 1); }
+  else apply(0);
+
+  // dragging: 1:1 with the finger, interruptible, velocity tracked for the hand-off
+  let drag = null, touch = null;
+  const begin = y0 => {
+    if (st.closing) return;
+    if (st.anim) { st.anim.stop(); st.anim = null; }
+    drag = { start: y0, base: st.y, hist: [[performance.now(), st.y]] };
+    sheet.classList.add("dragging");
+  };
+  const move = yp => {
+    let y = drag.base + (yp - drag.start);
+    if (y < 0) y = -rubberband(-y, st.h);
+    apply(y);
+    const now = performance.now();
+    drag.hist.push([now, y]);
+    while (drag.hist.length > 2 && now - drag.hist[0][0] > 100) drag.hist.shift();
+  };
+  const end = () => {
+    const h = drag.hist, a = h[0], b = h[h.length - 1];
+    const dt = (b[0] - a[0]) / 1000, v = dt > 0 ? (b[1] - a[1]) / dt : 0;
+    drag = null; sheet.classList.remove("dragging");
+    const landing = st.y + project(v);
+    if (landing > st.h * .5 && v > -50) { draft = null; st.close(v); haptic(); render(true); }
+    else go(0, v, v < -300 || v > 300 ? .8 : 1);   // a little bounce only when the release carried momentum
+  };
+  sheet.addEventListener("touchstart", e => {
+    if (e.touches.length !== 1 || st.closing) return;
+    const t = e.touches[0];
+    touch = { x: t.clientX, y: t.clientY, header: !!e.target.closest(".grabber, .sheet-nav"), decided: false };
+  }, { passive: true });
+  sheet.addEventListener("touchmove", e => {
+    if (!touch) return;
+    const t = e.touches[0], dx = t.clientX - touch.x, dy = t.clientY - touch.y;
+    if (!touch.decided) {
+      if (Math.hypot(dx, dy) < 10) { if (touch.header) e.preventDefault(); return; }
+      touch.decided = true;
+      const down = Math.abs(dy) > Math.abs(dx);
+      if (down && (touch.header || (dy > 0 && sheet.scrollTop <= 0))) begin(t.clientY);
+      else { touch = null; return; }
+    }
+    if (drag) { e.preventDefault(); move(t.clientY); }
+  }, { passive: false });
+  const touchEnd = () => { if (drag) end(); touch = null; };
+  sheet.addEventListener("touchend", touchEnd);
+  sheet.addEventListener("touchcancel", touchEnd);
+  sheet.addEventListener("pointerdown", e => {
+    if (e.pointerType === "touch" || !e.target.closest(".grabber, .sheet-nav") || e.target.closest("button")) return;
+    sheet.setPointerCapture(e.pointerId); begin(e.clientY);
+    const mv = ev => drag && move(ev.clientY);
+    const up = () => { sheet.removeEventListener("pointermove", mv); if (drag) end(); };
+    sheet.addEventListener("pointermove", mv);
+    sheet.addEventListener("pointerup", up, { once: true });
+    sheet.addEventListener("pointercancel", up, { once: true });
+  });
+  sheetCtl = st;
+}
+function closeLayer() {
+  draft = null;
+  if (sheetCtl && sheetCtl.sheet.isConnected) { if (!sheetCtl.closing) sheetCtl.close(0); }
+  else $("#layer").innerHTML = "";
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape" && $("#layer .sheet:not(.closing)")) closeLayer(); });
+document.addEventListener("touchstart", () => {}, { passive: true }); // lets :active fire on touch-down in iOS Safari
+let scrollTick = false;
+window.addEventListener("scroll", () => {
+  if (scrollTick) return; scrollTick = true;
+  requestAnimationFrame(() => { document.body.classList.toggle("scrolled", window.scrollY > 4); scrollTick = false; });
+}, { passive: true });
 let toastT;
 function toast(msg, ok = true) {
   const t = $("#toast"); t.innerHTML = (ok ? ic("check") : "") + esc(msg); t.hidden = false;
